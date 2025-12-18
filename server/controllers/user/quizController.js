@@ -20,7 +20,41 @@ export const getAvailableQuizzes = async (req, res) => {
       .populate('createdBy', 'username')
       .sort({ createdAt: -1 });
 
-    res.json(quizzes);
+    // Attach per-user attempt stats so frontend can show status / next attempt / results
+    const quizIds = quizzes.map((q) => q._id);
+    const attempts = await QuizAttempt.find({
+      quiz: { $in: quizIds },
+      student: req.user._id,
+      status: { $in: ['submitted', 'graded'] },
+    })
+      .sort({ submittedAt: -1 });
+
+    const statsByQuizId = new Map();
+    attempts.forEach((attempt) => {
+      const key = attempt.quiz.toString();
+      const existing = statsByQuizId.get(key);
+      if (!existing) {
+        statsByQuizId.set(key, {
+          attemptCount: 1,
+          latestAttemptId: attempt._id,
+          latestPercentage: attempt.percentage,
+          latestStatus: attempt.status,
+        });
+      } else {
+        existing.attemptCount += 1;
+      }
+    });
+
+    const enriched = quizzes.map((quiz) => {
+      const key = quiz._id.toString();
+      const stats = statsByQuizId.get(key) || { attemptCount: 0 };
+      return {
+        ...quiz.toObject(),
+        userStats: stats,
+      };
+    });
+
+    res.json(enriched);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

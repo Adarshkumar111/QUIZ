@@ -35,6 +35,12 @@ const QuizTaking = () => {
       }
     };
 
+    start();
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
   useEffect(() => {
     if (!quiz?.timeLimit || !startedAt) return;
 
@@ -50,8 +56,8 @@ const QuizTaking = () => {
     };
 
     tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
+    const timerId = setInterval(tick, 1000);
+    return () => clearInterval(timerId);
   }, [quiz?.timeLimit, startedAt]);
 
   useEffect(() => {
@@ -73,12 +79,6 @@ const QuizTaking = () => {
     const ss = String(seconds).padStart(2, '0');
     return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
   };
-
-    start();
-    return () => {
-      mounted = false;
-    };
-  }, [id]);
 
   const currentQuestion = questions[currentIndex];
   const currentSelected = currentQuestion ? answersByQuestionId[currentQuestion._id] : null;
@@ -125,7 +125,7 @@ const QuizTaking = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-6xl mx-auto">
       <div className="card space-y-2">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -164,68 +164,113 @@ const QuizTaking = () => {
           <p className="text-sm text-slate-400">No questions available.</p>
         </div>
       ) : (
-        <div className="card space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-400">Question {currentIndex + 1} of {questions.length}</p>
-            <p className="text-xs text-slate-400">Marks: {currentQuestion.marks || 1}</p>
+        <div className="grid grid-cols-12 gap-4 md:gap-6 items-start">
+          {/* Question number navigator */}
+          <div className="col-span-12 md:col-span-3 lg:col-span-2">
+            <div className="card space-y-3 sticky top-24">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-slate-50">Questions</p>
+                <p className="text-[11px] text-slate-500">
+                  {progress.answered}/{progress.total} answered
+                </p>
+              </div>
+              <div className="grid grid-cols-8 sm:grid-cols-6 md:grid-cols-3 gap-2">
+                {questions.map((q, index) => {
+                  const answered =
+                    answersByQuestionId[q._id] !== null &&
+                    answersByQuestionId[q._id] !== undefined &&
+                    answersByQuestionId[q._id] !== '';
+                  const isCurrent = index === currentIndex;
+                  return (
+                    <button
+                      key={q._id}
+                      type="button"
+                      onClick={() => setCurrentIndex(index)}
+                      className={`h-8 rounded-lg text-xs font-medium border transition-colors flex items-center justify-center ${
+                        isCurrent
+                          ? 'border-primary-500 bg-primary-500/20 text-primary-100'
+                          : answered
+                            ? 'border-emerald-500/70 bg-emerald-500/15 text-emerald-100 hover:border-emerald-400'
+                            : 'border-slate-800 bg-slate-900/70 text-slate-300 hover:border-primary-500/40'
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-          <h2 className="text-lg font-semibold text-slate-50">{currentQuestion.text}</h2>
 
-          <div className="space-y-2">
-            {(currentQuestion.options || []).map((opt) => {
-              const selected = currentSelected === opt.text;
-              return (
-                <button
-                  key={opt._id || opt.text}
-                  type="button"
-                  onClick={() => handleSelect(currentQuestion._id, opt.text)}
-                  className={`w-full text-left px-4 py-3 rounded-xl border transition-colors ${
-                    selected
-                      ? 'border-primary-500/70 bg-primary-500/10 text-primary-100'
-                      : 'border-slate-800 bg-slate-900/50 text-slate-200 hover:border-primary-500/40'
-                  }`}
-                >
-                  <span className="text-sm">{opt.text}</span>
-                </button>
-              );
-            })}
-          </div>
+          {/* Main question panel */}
+          <div className="col-span-12 md:col-span-9 lg:col-span-10">
+            <div className="card space-y-4 min-h-[380px] flex flex-col">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-slate-400">Question {currentIndex + 1} of {questions.length}</p>
+                <p className="text-xs text-slate-400">Marks: {currentQuestion.marks || 1}</p>
+              </div>
+              <h2 className="text-lg md:text-xl font-semibold text-slate-50 leading-relaxed">
+                {currentQuestion.text}
+              </h2>
 
-          <div className="flex items-center justify-between pt-2">
-            <button
-              type="button"
-              disabled={currentIndex === 0}
-              onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-              className="btn-secondary text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
+              <div className="mt-2 space-y-2 flex-1">
+                {(currentQuestion.options || []).map((opt) => {
+                  const selected = currentSelected === opt.text;
+                  return (
+                    <button
+                      key={opt._id || opt.text}
+                      type="button"
+                      onClick={() => handleSelect(currentQuestion._id, opt.text)}
+                      className={`w-full text-left px-4 py-3 rounded-xl border transition-colors ${
+                        selected
+                          ? 'border-primary-500/70 bg-primary-500/10 text-primary-100'
+                          : 'border-slate-800 bg-slate-900/60 text-slate-200 hover:border-primary-500/40'
+                      }`}
+                    >
+                      <span className="text-sm">{opt.text}</span>
+                    </button>
+                  );
+                })}
+              </div>
 
-            <div className="flex items-center gap-2">
-              {currentIndex < questions.length - 1 ? (
-                <button
-                  type="button"
-                  onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
-                  className="btn-primary text-sm"
-                >
-                  Next
-                </button>
-              ) : (
+              <div className="flex items-center justify-between pt-3">
                 <button
                   type="button"
-                  disabled={submitting}
-                  onClick={handleSubmit}
-                  className="btn-primary text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={currentIndex === 0}
+                  onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                  className="btn-secondary text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {submitting ? 'Submitting...' : 'Submit'}
+                  Previous
                 </button>
-              )}
+
+                <div className="flex items-center gap-2">
+                  {currentIndex < questions.length - 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
+                      className="btn-primary text-sm"
+                    >
+                      Next
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={handleSubmit}
+                      className="btn-primary text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {submitting ? 'Submitting...' : 'Submit'}
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
     </div>
   );
-};
+}
+;
 
 export default QuizTaking;

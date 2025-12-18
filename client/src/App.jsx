@@ -23,6 +23,7 @@ import Whiteboard from './pages/User/Whiteboard';
 import AdminDashboard from './pages/Admin/Dashboard';
 import NotesManagement from './pages/Admin/NotesManagement';
 import QuizBuilder from './pages/Admin/QuizBuilder';
+import QuizEdit from './pages/Admin/QuizEdit';
 
 import Analytics from './pages/Admin/Analytics';
 import Moderation from './pages/Admin/Moderation';
@@ -141,7 +142,8 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="notes" element={<NotesManagement />} />
           <Route path="quizzes" element={<QuizBuilder />} />
-          
+          <Route path="quizzes/:id/edit" element={<QuizEdit />} />
+
           <Route path="analytics" element={<Analytics />} />
           <Route path="moderation" element={<Moderation />} />
         </Route>

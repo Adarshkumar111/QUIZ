@@ -82,7 +82,9 @@ const QuizResults = () => {
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
             <p className="text-xs text-slate-400">Percentage</p>
-            <p className="text-xl font-semibold text-slate-50">{results.percentage}%</p>
+            <p className="text-xl font-semibold text-slate-50">
+              {Number(results.percentage ?? 0).toFixed(2)}%
+            </p>
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
             <p className="text-xs text-slate-400">Time taken</p>
