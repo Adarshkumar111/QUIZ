@@ -82,6 +82,9 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    user.lastSeenAt = new Date();
+    await user.save({ validateBeforeSave: false });
+
     res.json({
       _id: user._id,
       username: user.username,

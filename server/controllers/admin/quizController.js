@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Quiz from '../../models/Quiz.js';
 import Question from '../../models/Question.js';
 import QuizAttempt from '../../models/QuizAttempt.js';
@@ -10,10 +11,19 @@ import fs from 'fs';
 // @access  Private/Admin
 export const createQuiz = async (req, res) => {
   try {
-    const quiz = await Quiz.create({
-      ...req.body,
+    const { classroom, ...rest } = req.body;
+
+    const payload = {
+      ...rest,
       createdBy: req.user._id,
-    });
+    };
+
+    // Only set classroom if it is a valid ObjectId
+    if (classroom && mongoose.Types.ObjectId.isValid(classroom)) {
+      payload.classroom = classroom;
+    }
+
+    const quiz = await Quiz.create(payload);
 
     res.status(201).json(quiz);
   } catch (error) {

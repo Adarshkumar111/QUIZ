@@ -30,6 +30,8 @@ export const protect = async (req, res, next) => {
         return res.status(403).json({ message: 'Account has been deleted' });
       }
 
+      User.updateOne({ _id: req.user._id }, { $set: { lastSeenAt: new Date() } }).catch(() => {});
+
       next();
     } catch (error) {
       console.error(error);

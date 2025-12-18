@@ -1,12 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-
-const stats = [
-  { label: 'Total Students', value: '1,248', sub: '+120 this month' },
-  { label: 'Active Quizzes', value: '32', sub: '5 live right now' },
-  { label: 'Pending Notes', value: '18', sub: 'Awaiting review' },
-  { label: 'Open Tickets', value: '7', sub: 'Support queue' },
-];
+import { useEffect, useMemo, useState } from 'react';
+import { adminAPI } from '../../services/api';
 
 const quickLinks = [
   { to: '/admin/notes', label: 'Review Notes', desc: 'Approve, reject, and manage notes', badge: 'Notes' },
@@ -16,6 +11,45 @@ const quickLinks = [
 ];
 
 const Dashboard = () => {
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const load = async () => {
+      try {
+        const response = await adminAPI.getDashboardStats();
+        if (mounted) setDashboardStats(response.data?.stats || null);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    load();
+    const id = setInterval(load, 15000);
+
+    return () => {
+      mounted = false;
+      clearInterval(id);
+    };
+  }, []);
+
+  const stats = useMemo(() => {
+    const valueOrDash = (value) => {
+      if (loading) return '...';
+      if (value === null || value === undefined) return '0';
+      return String(value);
+    };
+
+    return [
+      { label: 'Total Students', value: valueOrDash(dashboardStats?.totalStudents), sub: `${valueOrDash(dashboardStats?.activeUsersNow)} active right now` },
+      { label: 'Active Quizzes', value: valueOrDash(dashboardStats?.activeQuizzesNow), sub: 'Live right now' },
+      { label: 'Pending Notes', value: valueOrDash(dashboardStats?.pendingNotes), sub: 'Awaiting review' },
+      { label: 'Open Tickets', value: valueOrDash(dashboardStats?.openTickets), sub: 'Support queue' },
+    ];
+  }, [dashboardStats, loading]);
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">

@@ -55,11 +55,6 @@ const UserLayout = () => {
             <p className="text-sm font-medium capitalize">{user?.role || 'student'}</p>
           </div>
           <div className="flex items-center gap-2">
-            {(user?.isAdmin || user?.role === 'admin' || user?.role === 'teacher') && (
-              <button className="hidden md:inline-flex text-xs md:text-sm px-3 py-1.5 rounded-lg border border-slate-700 hover:border-primary-500/70 hover:text-primary-200 transition-colors">
-                Switch to Admin
-              </button>
-            )}
             <button
               onClick={handleLogout}
               className="text-xs md:text-sm px-3 py-1.5 rounded-lg border border-rose-600/80 text-rose-200 hover:bg-rose-600/10 transition-colors"

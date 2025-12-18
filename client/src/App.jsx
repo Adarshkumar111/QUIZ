@@ -99,13 +99,17 @@ function App() {
           }
         />
 
-        {/* User Routes inside UserLayout */}
+        {/* User Routes inside UserLayout (only for non-admin/teacher) */}
         <Route
           path="/"
           element={
-            <ProtectedRoute>
-              <UserLayout />
-            </ProtectedRoute>
+            isAuthenticated && (user?.role === 'admin' || user?.role === 'teacher' || user?.isAdmin) ? (
+              <Navigate to="/admin" />
+            ) : (
+              <ProtectedRoute>
+                <UserLayout />
+              </ProtectedRoute>
+            )
           }
         >
           <Route path="dashboard" element={<UserDashboard />} />

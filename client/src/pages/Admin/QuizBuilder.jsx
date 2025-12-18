@@ -21,8 +21,8 @@ const QuizBuilder = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.title || !form.classroom) {
-      toast.error('Title and classroom are required');
+    if (!form.title) {
+      toast.error('Title is required');
       return;
     }
 
@@ -31,17 +31,21 @@ const QuizBuilder = () => {
       const payload = {
         title: form.title,
         description: form.description,
-        classroom: form.classroom, // classroom _id
         type: form.type,
         settings: {
           timeLimit: Number(form.timeLimit) || 30,
         },
       };
 
-      const { data } = await adminAPI.createQuiz(payload);
-      await adminAPI.publishQuiz(data._id);
+      // Only include classroom if it looks like a valid ObjectId (24 hex chars)
+      const classroomTrimmed = form.classroom.trim();
+      if (/^[0-9a-fA-F]{24}$/.test(classroomTrimmed)) {
+        payload.classroom = classroomTrimmed;
+      }
 
-      toast.success('Quiz created & published successfully');
+      await adminAPI.createQuiz(payload);
+
+      toast.success('Quiz created successfully. Please add questions before publishing.');
       setForm(initialState);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create quiz');
@@ -72,13 +76,13 @@ const QuizBuilder = () => {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-slate-400">Classroom ID</label>
+            <label className="text-xs text-slate-400">Classroom ID (optional)</label>
             <input
               name="classroom"
               value={form.classroom}
               onChange={handleChange}
               className="input-field"
-              placeholder="Paste classroom ObjectId"
+              placeholder="Paste classroom ObjectId (optional)"
             />
           </div>
         </div>

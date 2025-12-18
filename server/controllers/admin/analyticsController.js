@@ -3,6 +3,7 @@ import QuizAttempt from '../../models/QuizAttempt.js';
 import Note from '../../models/Note.js';
 import User from '../../models/User.js';
 import Discussion from '../../models/Discussion.js';
+import Ticket from '../../models/Ticket.js';
 
 // @desc    Get quiz performance analytics
 // @route   GET /api/admin/analytics/quiz-performance
@@ -229,24 +230,60 @@ export const getFlaggedContent = async (req, res) => {
 // @access  Private/Admin
 export const getDashboardStats = async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments({ isActive: true });
-    const totalQuizzes = await Quiz.countDocuments({ deletedAt: null });
-    const totalNotes = await Note.countDocuments({ deletedAt: null });
+    const notDeletedQuery = { $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }] };
+    const totalStudents = await User.countDocuments({
+      role: 'student',
+      isActive: true,
+      $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+    });
+
+    const now = new Date();
+    const activeWindowMs = 5 * 60 * 1000;
+    const activeSince = new Date(now.getTime() - activeWindowMs);
+    const activeUsersNow = await User.countDocuments({
+      isActive: true,
+      lastSeenAt: { $gte: activeSince },
+      $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
+    });
+
+    const activeQuizzesNow = await Quiz.countDocuments({
+      ...notDeletedQuery,
+      status: 'published',
+      type: 'live',
+      startTime: { $lte: now },
+      endTime: { $gte: now },
+    });
+
+    const pendingNotes = await Note.countDocuments({
+      ...notDeletedQuery,
+      status: 'pending',
+    });
+
+    const openTickets = await Ticket.countDocuments({
+      status: { $in: ['open', 'in-progress'] },
+    });
+
+    const totalQuizzes = await Quiz.countDocuments(notDeletedQuery);
+    const totalNotes = await Note.countDocuments(notDeletedQuery);
     const totalAttempts = await QuizAttempt.countDocuments();
 
-    const recentQuizzes = await Quiz.find({ deletedAt: null })
+    const recentQuizzes = await Quiz.find(notDeletedQuery)
       .sort({ createdAt: -1 })
       .limit(5)
       .populate('classroom', 'name');
 
-    const recentNotes = await Note.find({ deletedAt: null })
+    const recentNotes = await Note.find(notDeletedQuery)
       .sort({ createdAt: -1 })
       .limit(5)
       .populate('uploadedBy', 'username');
 
     res.json({
       stats: {
-        totalUsers,
+        totalStudents,
+        activeUsersNow,
+        activeQuizzesNow,
+        pendingNotes,
+        openTickets,
         totalQuizzes,
         totalNotes,
         totalAttempts,
