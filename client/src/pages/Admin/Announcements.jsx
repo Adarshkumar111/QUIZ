@@ -12,6 +12,7 @@ const AdminAnnouncements = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -36,14 +37,12 @@ const AdminAnnouncements = () => {
   }, []);
 
   const handleDelete = async (id) => {
-    const ok = window.confirm('Delete this announcement for everyone? This cannot be undone.');
-    if (!ok) return;
-
     try {
       setLoading(true);
       setError('');
       await adminAPI.deleteAnnouncement(id);
       setAnnouncements((prev) => prev.filter((a) => a._id !== id));
+      setPendingDeleteId((prev) => (prev === id ? null : prev));
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to delete announcement');
     } finally {
@@ -191,7 +190,7 @@ const AdminAnnouncements = () => {
                       </span>
                       <button
                         type="button"
-                        onClick={() => handleDelete(a._id)}
+                        onClick={() => setPendingDeleteId(a._id)}
                         disabled={loading}
                         className="text-[11px] px-2 py-0.5 rounded-lg border border-rose-600/70 text-rose-300 hover:bg-rose-600/10 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
@@ -203,6 +202,31 @@ const AdminAnnouncements = () => {
                   <p className="text-xs text-slate-300 whitespace-pre-wrap mt-1">{a.content}</p>
                   {a.createdBy?.username && (
                     <p className="text-[11px] text-slate-500 mt-1">By {a.createdBy.username}</p>
+                  )}
+                  {pendingDeleteId === a._id && (
+                    <div className="mt-3 border border-rose-500/40 bg-rose-500/5 rounded-lg px-3 py-2 flex flex-col gap-2">
+                      <p className="text-[11px] text-rose-200">
+                        Are you sure you want to permanently delete this announcement for all users?
+                      </p>
+                      <div className="flex items-center gap-2 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setPendingDeleteId(null)}
+                          className="text-[11px] px-2.5 py-1 rounded-lg border border-slate-600 text-slate-200 hover:bg-slate-800/80"
+                          disabled={loading}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(a._id)}
+                          className="text-[11px] px-2.5 py-1 rounded-lg border border-rose-500 bg-rose-600/80 text-white hover:bg-rose-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                          disabled={loading}
+                        >
+                          Confirm delete
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               );
