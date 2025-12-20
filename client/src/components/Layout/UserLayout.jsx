@@ -1,6 +1,8 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import useAuthStore from '../../store/authStore';
+import socketService from '../../services/socket';
 
 const userLinks = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -19,6 +21,32 @@ const UserLayout = () => {
   const viewMode = useAuthStore((s) => s.viewMode);
   const setViewMode = useAuthStore((s) => s.setViewMode);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [hasNewAnnouncements, setHasNewAnnouncements] = useState(false);
+
+  // Listen for realtime announcements and show a red dot until user visits the page
+  useEffect(() => {
+    const handleAnnouncement = () => {
+      // Only show badge if user is not already on the announcements page
+      if (location.pathname !== '/announcements') {
+        setHasNewAnnouncements(true);
+      }
+    };
+
+    socketService.onAnnouncement(handleAnnouncement);
+
+    return () => {
+      socketService.off('announcement', handleAnnouncement);
+    };
+  }, [location.pathname]);
+
+  // Clear badge when user opens announcements page
+  useEffect(() => {
+    if (location.pathname === '/announcements' && hasNewAnnouncements) {
+      setHasNewAnnouncements(false);
+    }
+  }, [location.pathname, hasNewAnnouncements]);
 
   const handleLogout = async () => {
     await logout();
@@ -46,14 +74,17 @@ const UserLayout = () => {
               key={link.to}
               to={link.to}
               className={({ isActive }) =>
-                `flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                `flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   isActive
                     ? 'bg-slate-900 text-primary-200 border border-primary-500/50 shadow-[0_0_18px_rgba(6,174,214,0.35)]'
                     : 'text-slate-300 hover:bg-slate-900/70 hover:text-primary-100'
                 }`
               }
             >
-              {link.label}
+              <span>{link.label}</span>
+              {link.to === '/announcements' && hasNewAnnouncements && (
+                <span className="ml-2 inline-flex h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(248,113,113,0.8)]" />
+              )}
             </NavLink>
           ))}
         </nav>
