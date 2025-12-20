@@ -1,6 +1,8 @@
 import Classroom from '../../models/Classroom.js';
 import User from '../../models/User.js';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
+import fileService from '../../services/fileService.js';
 
 // @desc    Create classroom
 // @route   POST /api/admin/classrooms
@@ -178,6 +180,125 @@ export const removeMember = async (req, res) => {
     await classroom.save();
 
     res.json({ message: 'Member removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get classroom topics (with videos)
+// @route   GET /api/admin/classrooms/:id/topics
+// @access  Private/Admin/Teacher
+export const getClassroomTopics = async (req, res) => {
+  try {
+    const classroom = await Classroom.findById(req.params.id);
+
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    res.json(classroom.topics || []);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Create topic inside classroom
+// @route   POST /api/admin/classrooms/:id/topics
+// @access  Private/Admin/Teacher
+export const createClassroomTopic = async (req, res) => {
+  try {
+    const { name, description } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'Topic name is required' });
+    }
+
+    const classroom = await Classroom.findById(req.params.id);
+
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    if (!classroom.topics) classroom.topics = [];
+
+    const topicId = new mongoose.Types.ObjectId();
+    const topic = {
+      _id: topicId,
+      name: name.trim(),
+      description: description?.trim() || '',
+      videos: [],
+    };
+
+    classroom.topics.push(topic);
+    await classroom.save();
+
+    res.status(201).json(topic);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Add video to classroom topic (URL or uploaded file)
+// @route   POST /api/admin/classrooms/:id/topics/:topicId/videos
+// @access  Private/Admin/Teacher
+export const addClassroomTopicVideo = async (req, res) => {
+  try {
+    const { kind, title, description, url } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: 'Video title is required' });
+    }
+
+    if (!kind || !['url', 'upload'].includes(kind)) {
+      return res.status(400).json({ message: 'Invalid video kind' });
+    }
+
+    const classroom = await Classroom.findById(req.params.id);
+
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    const topic = (classroom.topics || []).find(
+      (t) => t._id?.toString() === req.params.topicId || t.id?.toString() === req.params.topicId
+    );
+
+    if (!topic) {
+      return res.status(404).json({ message: 'Topic not found' });
+    }
+
+    let finalUrl = url;
+
+    if (kind === 'url') {
+      if (!finalUrl || !finalUrl.trim()) {
+        return res.status(400).json({ message: 'Video URL is required' });
+      }
+      finalUrl = finalUrl.trim();
+    } else if (kind === 'upload') {
+      if (!req.file) {
+        return res.status(400).json({ message: 'Please upload a video file' });
+      }
+
+      const fileData = await fileService.uploadFile(req.file, 'classroom-videos');
+      finalUrl = fileData.url;
+    }
+
+    const videoId = new mongoose.Types.ObjectId();
+    const video = {
+      _id: videoId,
+      title: title.trim(),
+      description: description?.trim() || '',
+      kind,
+      url: finalUrl,
+      createdAt: new Date(),
+    };
+
+    if (!topic.videos) topic.videos = [];
+    topic.videos.unshift(video);
+
+    await classroom.save();
+
+    res.status(201).json(video);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

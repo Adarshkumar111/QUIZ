@@ -96,6 +96,12 @@ export const adminAPI = {
   updateClassroom: (id, data) => api.put(`/admin/classrooms/${id}`, data),
   deleteClassroom: (id) => api.delete(`/admin/classrooms/${id}`),
   generateInvite: (id) => api.post(`/admin/classrooms/${id}/invite`),
+  getClassroomTopics: (id) => api.get(`/admin/classrooms/${id}/topics`),
+  createClassroomTopic: (id, data) => api.post(`/admin/classrooms/${id}/topics`, data),
+  addClassroomTopicVideo: (id, topicId, formData) =>
+    api.post(`/admin/classrooms/${id}/topics/${topicId}/videos`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   
   // Analytics
   getDashboardStats: () => api.get('/admin/analytics/dashboard'),
@@ -169,6 +175,9 @@ export const userAPI = {
   getUpcomingEvents: () => api.get('/dashboard/events'),
   getNotifications: (params) => api.get('/dashboard/notifications', { params }),
   getUserClassrooms: () => api.get('/dashboard/classrooms'),
+  // Classroom videos/topics (read-only)
+  getClassroomTopicsWithVideos: (classroomId, params) =>
+    api.get(`/classrooms/${classroomId}/topics`, { params }),
   
   // Assignments
   getAssignments: (params) => api.get('/assignments', { params }),

@@ -52,6 +52,39 @@ const classroomSchema = new mongoose.Schema(
         default: false,
       },
     },
+    topics: [
+      {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        description: String,
+        videos: [
+          {
+            title: {
+              type: String,
+              required: true,
+              trim: true,
+            },
+            description: String,
+            kind: {
+              type: String,
+              enum: ['url', 'upload'],
+              required: true,
+            },
+            url: {
+              type: String,
+              required: true,
+            },
+            createdAt: {
+              type: Date,
+              default: Date.now,
+            },
+          },
+        ],
+      },
+    ],
     isActive: {
       type: Boolean,
       default: true,
