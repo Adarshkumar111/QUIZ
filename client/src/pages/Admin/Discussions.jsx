@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { adminAPI, userAPI } from '../../services/api';
 import socketService from '../../services/socket';
+import useAuthStore from '../../store/authStore';
 
 const AdminDiscussions = () => {
+  const user = useAuthStore((s) => s.user);
   const [classrooms, setClassrooms] = useState([]);
   const [groups, setGroups] = useState([]);
   const [activeType, setActiveType] = useState('classroom'); // classroom | group
@@ -310,54 +312,69 @@ const AdminDiscussions = () => {
               <p className="text-sm text-slate-500">No messages yet. Start the conversation!</p>
             )}
 
-            {messages.map((m) => (
-              <div
-                key={m._id}
-                className="rounded-lg border border-slate-800 bg-slate-950/70 px-3 py-2 text-xs text-slate-100"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded-full bg-linear-to-tr from-primary-500 to-secondary-500 flex items-center justify-center text-[10px] font-semibold">
-                      {m.author?.username?.[0]?.toUpperCase?.() || '?'}
-                    </div>
-                    <span className="font-medium text-[11px]">
-                      {m.author?.username || 'User'}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-500">
-                    {m.createdAt ? new Date(m.createdAt).toLocaleString() : ''}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-100 whitespace-pre-wrap break-words">
-                  {m.content}
-                </p>
-                {Array.isArray(m.attachments) && m.attachments.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {m.attachments.map((att) => (
-                      <a
-                        key={att.publicId || att.url}
-                        href={att.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block border border-slate-700 rounded-md overflow-hidden max-w-[120px] max-h-[90px] bg-slate-900"
-                      >
-                        {att.fileType?.startsWith('image') ? (
-                          <img
-                            src={att.url}
-                            alt={att.fileName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="p-2 text-[10px] text-slate-200 truncate">
-                            {att.fileName || 'Attachment'}
+            {messages.map((m) => {
+              const isMe = user && m.author && m.author._id === user._id;
+              return (
+                <div
+                  key={m._id}
+                  className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[82%] rounded-2xl px-3 py-2 text-xs shadow-sm border ${
+                      isMe
+                        ? 'bg-primary-600/90 border-primary-500/80 text-white'
+                        : 'bg-slate-950/80 border-slate-800 text-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        {!isMe && (
+                          <div className="h-6 w-6 rounded-full bg-linear-to-tr from-primary-500 to-secondary-500 flex items-center justify-center text-[10px] font-semibold">
+                            {m.author?.username?.[0]?.toUpperCase?.() || '?'}
                           </div>
                         )}
-                      </a>
-                    ))}
+                        <span className="font-medium text-[11px]">
+                          {isMe ? 'You' : m.author?.username || 'User'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 ml-3 whitespace-nowrap">
+                        {m.createdAt ? new Date(m.createdAt).toLocaleTimeString() : ''}
+                      </span>
+                    </div>
+                    {m.content && (
+                      <p className="text-xs whitespace-pre-wrap wrap-break-word leading-relaxed">
+                        {m.content}
+                      </p>
+                    )}
+                    {Array.isArray(m.attachments) && m.attachments.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {m.attachments.map((att) => (
+                          <a
+                            key={att.publicId || att.url}
+                            href={att.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block border border-slate-700 rounded-md overflow-hidden max-w-[140px] max-h-[110px] bg-slate-900"
+                          >
+                            {att.fileType?.startsWith('image') ? (
+                              <img
+                                src={att.url}
+                                alt={att.fileName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="p-2 text-[10px] text-slate-200 truncate">
+                                {att.fileName || 'Attachment'}
+                              </div>
+                            )}
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
 
           <form
