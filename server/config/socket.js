@@ -6,9 +6,22 @@ import { createAdapter } from '@socket.io/redis-adapter';
 let io;
 
 export const initSocket = (server) => {
+  const allowedOrigins = (process.env.CLIENT_URL || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (process.env.NODE_ENV !== 'production') {
+    // Helpful dev fallbacks when CLIENT_URL is missing/mismatched
+    allowedOrigins.push('http://localhost:5173');
+    allowedOrigins.push('http://127.0.0.1:5173');
+    allowedOrigins.push('http://localhost:3000');
+    allowedOrigins.push('http://127.0.0.1:3000');
+  }
+
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL,
+      origin: allowedOrigins.length > 0 ? allowedOrigins : true,
       credentials: true,
     },
   });
