@@ -28,6 +28,8 @@ const Classrooms = () => {
   const [editingTopicName, setEditingTopicName] = useState('');
   const [editingTopicDescription, setEditingTopicDescription] = useState('');
 
+  const [expandedTopicId, setExpandedTopicId] = useState('');
+
   const [error, setError] = useState('');
 
   const selectedClassroom = classrooms.find((c) => c._id === selectedClassroomId);
@@ -247,186 +249,203 @@ const Classrooms = () => {
                   {topics.length === 0 && !loadingTopics && (
                     <p className="text-xs text-slate-500">No topics yet for this classroom.</p>
                   )}
-                  {topics.map((t) => (
-                    <div
-                      key={t._id || t.id}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-800 bg-slate-950/70 text-xs space-y-2"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          {editingTopicId === (t._id || t.id) ? (
-                            <>
+                  {topics.map((t) => {
+                    const id = t._id || t.id;
+                    const isExpanded = expandedTopicId === id;
+                    return (
+                      <div
+                        key={id}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-800 bg-slate-950/70 text-xs space-y-2"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            {editingTopicId === id ? (
+                              <>
+                                <input
+                                  type="text"
+                                  value={editingTopicName}
+                                  onChange={(e) => setEditingTopicName(e.target.value)}
+                                  className="w-full rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] mb-1 focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
+                                />
+                                <textarea
+                                  rows={2}
+                                  value={editingTopicDescription}
+                                  onChange={(e) => setEditingTopicDescription(e.target.value)}
+                                  className="w-full rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] resize-none focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
+                                />
+                              </>
+                            ) : (
+                              <>
+                                <p className="font-medium text-slate-50 truncate">{t.name}</p>
+                                {t.description && (
+                                  <p className="text-[11px] text-slate-400 truncate">{t.description}</p>
+                                )}
+                              </>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[10px] text-slate-500">
+                              {(t.videos || []).length} videos
+                            </span>
+                            <div className="flex gap-1">
+                              {editingTopicId === id ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={cancelEditTopic}
+                                    className="px-2 py-0.5 rounded-lg border border-slate-700 text-[10px] text-slate-200 hover:bg-slate-800/80"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={!editingTopicName.trim()}
+                                    className="px-2 py-0.5 rounded-lg bg-primary-600 hover:bg-primary-500 text-[10px] text-white disabled:opacity-60"
+                                  >
+                                    Save
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => startEditTopic(t)}
+                                  className="px-2 py-0.5 rounded-lg border border-slate-700 text-[10px] text-slate-200 hover:bg-slate-800/80"
+                                >
+                                  Edit
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setExpandedTopicId(isExpanded ? '' : id)
+                                }
+                                className="px-2 py-0.5 rounded-lg border border-primary-500/70 text-[10px] text-primary-200 hover:bg-primary-500/10"
+                              >
+                                {isExpanded ? 'Hide videos' : 'Show / add videos'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {isExpanded && (
+                          <>
+                            {/* Add video form for this topic */}
+                            <form
+                              onSubmit={(e) => handleAddVideo(e, id)}
+                              className="space-y-1 border-t border-slate-800 pt-2 mt-2"
+                            >
                               <input
                                 type="text"
-                                value={editingTopicName}
-                                onChange={(e) => setEditingTopicName(e.target.value)}
-                                className="w-full rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] mb-1 focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
+                                value={videoTitle}
+                                onChange={(e) => setVideoTitle(e.target.value)}
+                                placeholder="Video title (e.g. Lecture 1 – ER Model)"
+                                className="w-full rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
                               />
                               <textarea
                                 rows={2}
-                                value={editingTopicDescription}
-                                onChange={(e) => setEditingTopicDescription(e.target.value)}
+                                value={videoDescription}
+                                onChange={(e) => setVideoDescription(e.target.value)}
+                                placeholder="Short description (optional)"
                                 className="w-full rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] resize-none focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
                               />
-                            </>
-                          ) : (
-                            <>
-                              <p className="font-medium text-slate-50 truncate">{t.name}</p>
-                              {t.description && (
-                                <p className="text-[11px] text-slate-400 truncate">{t.description}</p>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="text-[10px] text-slate-500">
-                            {(t.videos || []).length} videos
-                          </span>
-                          {editingTopicId === (t._id || t.id) ? (
-                            <div className="flex gap-1">
-                              <button
-                                type="button"
-                                onClick={cancelEditTopic}
-                                className="px-2 py-0.5 rounded-lg border border-slate-700 text-[10px] text-slate-200 hover:bg-slate-800/80"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                type="button"
-                                disabled={!editingTopicName.trim()}
-                                className="px-2 py-0.5 rounded-lg bg-primary-600 hover:bg-primary-500 text-[10px] text-white disabled:opacity-60"
-                              >
-                                Save
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => startEditTopic(t)}
-                              className="px-2 py-0.5 rounded-lg border border-slate-700 text-[10px] text-slate-200 hover:bg-slate-800/80"
-                            >
-                              Edit
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                              <div className="flex flex-col gap-1">
+                                <select
+                                  value={videoKind}
+                                  onChange={(e) => {
+                                    setVideoKind(e.target.value);
+                                    setVideoUrl('');
+                                    setVideoFile(null);
+                                  }}
+                                  className="rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
+                                >
+                                  {VIDEO_KINDS.map((k) => (
+                                    <option key={k.value} value={k.value}>
+                                      {k.label}
+                                    </option>
+                                  ))}
+                                </select>
 
-                      {/* Add video form for this topic */}
-                      <form
-                        onSubmit={(e) => handleAddVideo(e, t._id || t.id)}
-                        className="space-y-1 border-t border-slate-800 pt-2 mt-2"
-                      >
-                        <input
-                          type="text"
-                          value={videoTitle}
-                          onChange={(e) => setVideoTitle(e.target.value)}
-                          placeholder="Video title (e.g. Lecture 1 – ER Model)"
-                          className="w-full rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
-                        />
-                        <textarea
-                          rows={2}
-                          value={videoDescription}
-                          onChange={(e) => setVideoDescription(e.target.value)}
-                          placeholder="Short description (optional)"
-                          className="w-full rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] resize-none focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
-                        />
-                        <div className="flex flex-col gap-1">
-                          <select
-                            value={videoKind}
-                            onChange={(e) => {
-                              setVideoKind(e.target.value);
-                              setVideoUrl('');
-                              setVideoFile(null);
-                            }}
-                            className="rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
-                          >
-                            {VIDEO_KINDS.map((k) => (
-                              <option key={k.value} value={k.value}>
-                                {k.label}
-                              </option>
-                            ))}
-                          </select>
+                                {videoKind === 'url' && (
+                                  <input
+                                    type="text"
+                                    value={videoUrl}
+                                    onChange={(e) => setVideoUrl(e.target.value)}
+                                    placeholder="Paste YouTube / Drive / any video link here"
+                                    className="w-full rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
+                                  />
+                                )}
 
-                          {videoKind === 'url' && (
-                            <input
-                              type="text"
-                              value={videoUrl}
-                              onChange={(e) => setVideoUrl(e.target.value)}
-                              placeholder="Paste YouTube / Drive / any video link here"
-                              className="w-full rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
-                            />
-                          )}
-
-                          {videoKind === 'upload' && (
-                            <label className="inline-flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer">
-                              <span className="px-2 py-1 rounded-lg border border-slate-700 bg-slate-900/70">
-                                {videoFile ? videoFile.name : 'Choose video file'}
-                              </span>
-                              <input
-                                type="file"
-                                accept="video/*"
-                                onChange={handleVideoFileChange}
-                                className="hidden"
-                              />
-                            </label>
-                          )}
-                        </div>
-
-                        <button
-                          type="submit"
-                          disabled={
-                            addingVideoForTopicId === (t._id || t.id) ||
-                            !videoTitle.trim() ||
-                            (videoKind === 'url' && !videoUrl.trim()) ||
-                            (videoKind === 'upload' && !videoFile)
-                          }
-                          className="mt-1 inline-flex items-center justify-center rounded-lg bg-primary-600 hover:bg-primary-500 disabled:opacity-60 disabled:cursor-not-allowed text-[11px] font-medium px-3 py-1.5 text-white"
-                        >
-                          {addingVideoForTopicId === (t._id || t.id)
-                            ? 'Adding video...'
-                            : 'Add video'}
-                        </button>
-                      </form>
-
-                      {/* Videos list */}
-                      <div className="mt-2 space-y-1 max-h-48 overflow-y-auto pr-1">
-                        {(t.videos || []).length === 0 && (
-                          <p className="text-[11px] text-slate-500">
-                            No videos added for this topic yet.
-                          </p>
-                        )}
-                        {(t.videos || []).map((v) => (
-                          <div
-                            key={v._id || v.id || v.title + v.url}
-                            className="border border-slate-800 rounded-lg bg-slate-950/80 px-2 py-1 text-[11px] flex flex-col gap-1"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-slate-50 truncate">{v.title}</p>
-                                {v.description && (
-                                  <p className="text-[10px] text-slate-400 truncate">{v.description}</p>
+                                {videoKind === 'upload' && (
+                                  <label className="inline-flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer">
+                                    <span className="px-2 py-1 rounded-lg border border-slate-700 bg-slate-900/70">
+                                      {videoFile ? videoFile.name : 'Choose video file'}
+                                    </span>
+                                    <input
+                                      type="file"
+                                      accept="video/*"
+                                      onChange={handleVideoFileChange}
+                                      className="hidden"
+                                    />
+                                  </label>
                                 )}
                               </div>
-                              <span className="px-2 py-0.5 rounded-full text-[9px] bg-slate-900 border border-slate-700 text-slate-300">
-                                {v.kind === 'upload' ? 'Upload' : 'Link'}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[9px] text-slate-500 truncate">{v.url}</span>
-                              <a
-                                href={v.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[10px] px-2 py-0.5 rounded-lg border border-primary-500/70 text-primary-200 hover:bg-primary-500/10 whitespace-nowrap"
+
+                              <button
+                                type="submit"
+                                disabled={
+                                  addingVideoForTopicId === id ||
+                                  !videoTitle.trim() ||
+                                  (videoKind === 'url' && !videoUrl.trim()) ||
+                                  (videoKind === 'upload' && !videoFile)
+                                }
+                                className="mt-1 inline-flex items-center justify-center rounded-lg bg-primary-600 hover:bg-primary-500 disabled:opacity-60 disabled:cursor-not-allowed text-[11px] font-medium px-3 py-1.5 text-white"
                               >
-                                Open
-                              </a>
+                                {addingVideoForTopicId === id ? 'Adding video...' : 'Add video'}
+                              </button>
+                            </form>
+
+                            {/* Videos list */}
+                            <div className="mt-2 space-y-1 max-h-48 overflow-y-auto pr-1">
+                              {(t.videos || []).length === 0 && (
+                                <p className="text-[11px] text-slate-500">
+                                  No videos added for this topic yet.
+                                </p>
+                              )}
+                              {(t.videos || []).map((v) => (
+                                <div
+                                  key={v._id || v.id || v.title + v.url}
+                                  className="border border-slate-800 rounded-lg bg-slate-950/80 px-2 py-1 text-[11px] flex flex-col gap-1"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-slate-50 truncate">{v.title}</p>
+                                      {v.description && (
+                                        <p className="text-[10px] text-slate-400 truncate">{v.description}</p>
+                                      )}
+                                    </div>
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] bg-slate-900 border border-slate-700 text-slate-300">
+                                      {v.kind === 'upload' ? 'Upload' : 'Link'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[9px] text-slate-500 truncate">{v.url}</span>
+                                    <a
+                                      href={v.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[10px] px-2 py-0.5 rounded-lg border border-primary-500/70 text-primary-200 hover:bg-primary-500/10 whitespace-nowrap"
+                                    >
+                                      Open
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          </div>
-                        ))}
+                          </>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             )}
