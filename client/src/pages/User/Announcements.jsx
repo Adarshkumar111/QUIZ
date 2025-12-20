@@ -19,7 +19,15 @@ const Announcements = () => {
       setError('');
       // Re-use dashboard events endpoint to fetch recent announcements
       const res = await userAPI.getUpcomingEvents();
-      setAnnouncements(res.data?.announcements || []);
+      const anns = res.data?.announcements || [];
+      setAnnouncements(anns);
+
+      if (anns.length > 0) {
+        const latest = anns[0].publishAt || anns[0].createdAt;
+        if (latest) {
+          localStorage.setItem('announcements:lastSeenAt', latest);
+        }
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load announcements');
     } finally {

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import useAuthStore from '../../store/authStore';
 import socketService from '../../services/socket';
+import { userAPI } from '../../services/api';
 
 const userLinks = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -24,6 +25,29 @@ const UserLayout = () => {
   const location = useLocation();
 
   const [hasNewAnnouncements, setHasNewAnnouncements] = useState(false);
+
+  // On first load, check if there are announcements newer than what user has seen
+  useEffect(() => {
+    const checkInitialAnnouncements = async () => {
+      try {
+        const res = await userAPI.getUpcomingEvents();
+        const anns = res.data?.announcements || [];
+        if (!anns.length) return;
+
+        const latest = anns[0].publishAt || anns[0].createdAt;
+        if (!latest) return;
+
+        const lastSeen = localStorage.getItem('announcements:lastSeenAt');
+        if (!lastSeen || new Date(latest) > new Date(lastSeen)) {
+          setHasNewAnnouncements(true);
+        }
+      } catch (e) {
+        // ignore errors here, badge is a best-effort hint
+      }
+    };
+
+    checkInitialAnnouncements();
+  }, []);
 
   // Listen for realtime announcements and show a red dot until user visits the page
   useEffect(() => {
