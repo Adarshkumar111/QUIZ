@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { adminAPI, userAPI } from '../../services/api';
 import socketService from '../../services/socket';
 import useAuthStore from '../../store/authStore';
@@ -24,6 +24,8 @@ const AdminDiscussions = () => {
   const [students, setStudents] = useState([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
   const [creatingGroup, setCreatingGroup] = useState(false);
+
+  const messagesContainerRef = useRef(null);
 
   const activeTitle = useMemo(() => {
     if (!activeId) return '';
@@ -115,6 +117,15 @@ const AdminDiscussions = () => {
       socketService.off('newGroupMessage', onNewGroupMessage);
     };
   }, [activeId, activeType]);
+
+  // Auto-scroll to latest message whenever room or message list changes
+  useEffect(() => {
+    if (!messagesContainerRef.current) return;
+    const el = messagesContainerRef.current;
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
+  }, [activeId, messages.length]);
 
   const handleFilesChange = (e) => {
     setFiles(Array.from(e.target.files || []));
@@ -301,7 +312,10 @@ const AdminDiscussions = () => {
             </div>
           )}
 
-          <div className="flex-1 min-h-[260px] max-h-[420px] overflow-y-auto px-4 py-3 space-y-3">
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 min-h-[260px] max-h-[420px] overflow-y-auto px-4 py-3 space-y-3"
+          >
             {!activeId && (
               <p className="text-sm text-slate-500">
                 Choose a classroom or group on the left to join its discussion.
