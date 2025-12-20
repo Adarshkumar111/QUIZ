@@ -18,6 +18,7 @@ import Discussions from './pages/User/Discussions';
 import Assignments from './pages/User/Assignments';
 import Profile from './pages/User/Profile';
 import Whiteboard from './pages/User/Whiteboard';
+import UserAnnouncements from './pages/User/Announcements';
 
 // Admin Pages
 import AdminDashboard from './pages/Admin/Dashboard';
@@ -28,6 +29,7 @@ import QuizEdit from './pages/Admin/QuizEdit';
 import Analytics from './pages/Admin/Analytics';
 import AttemptDetail from './pages/Admin/AttemptDetail';
 import AdminDiscussions from './pages/Admin/Discussions';
+import AdminAnnouncements from './pages/Admin/Announcements';
 
 // Layouts & Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -127,6 +129,7 @@ function App() {
           <Route path="quizzes/:id/results" element={<QuizResults />} />
           <Route path="discussions" element={<Discussions />} />
           <Route path="assignments" element={<Assignments />} />
+          <Route path="announcements" element={<UserAnnouncements />} />
           <Route path="profile" element={<Profile />} />
           <Route path="whiteboard/:sessionId" element={<Whiteboard />} />
         </Route>
@@ -148,6 +151,7 @@ function App() {
           <Route path="analytics" element={<Analytics />} />
           <Route path="attempts/:attemptId" element={<AttemptDetail />} />
           <Route path="discussions" element={<AdminDiscussions />} />
+          <Route path="announcements" element={<AdminAnnouncements />} />
         </Route>
 
         {/* Default Redirects */}

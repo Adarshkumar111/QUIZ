@@ -8,6 +8,7 @@ const userLinks = [
   { to: '/quizzes', label: 'Quizzes' },
   { to: '/discussions', label: 'Discussions' },
   { to: '/assignments', label: 'Assignments' },
+  { to: '/announcements', label: 'Announcements' },
   { to: '/whiteboard/demo', label: 'Whiteboard' },
   { to: '/profile', label: 'Profile' },
 ];
