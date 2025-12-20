@@ -35,6 +35,22 @@ const AdminAnnouncements = () => {
     loadAnnouncements();
   }, []);
 
+  const handleDelete = async (id) => {
+    const ok = window.confirm('Delete this announcement for everyone? This cannot be undone.');
+    if (!ok) return;
+
+    try {
+      setLoading(true);
+      setError('');
+      await adminAPI.deleteAnnouncement(id);
+      setAnnouncements((prev) => prev.filter((a) => a._id !== id));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete announcement');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
@@ -169,9 +185,19 @@ const AdminAnnouncements = () => {
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-slate-400 whitespace-nowrap">
-                      {createdAt ? new Date(createdAt).toLocaleString() : ''}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] text-slate-400 whitespace-nowrap">
+                        {createdAt ? new Date(createdAt).toLocaleString() : ''}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(a._id)}
+                        disabled={loading}
+                        className="text-[11px] px-2 py-0.5 rounded-lg border border-rose-600/70 text-rose-300 hover:bg-rose-600/10 disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                   <h3 className="text-sm font-semibold text-slate-50 mt-1">{a.title}</h3>
                   <p className="text-xs text-slate-300 whitespace-pre-wrap mt-1">{a.content}</p>

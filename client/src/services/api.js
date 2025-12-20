@@ -125,6 +125,7 @@ export const adminAPI = {
   // Announcements
   getAllAnnouncements: () => api.get('/admin/announcements'),
   createAnnouncement: (data) => api.post('/admin/announcements', data),
+  deleteAnnouncement: (id) => api.delete(`/admin/announcements/${id}`),
   
   // Tickets
   getAllTickets: (params) => api.get('/admin/tickets', { params }),
