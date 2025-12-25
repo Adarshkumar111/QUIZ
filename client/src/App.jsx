@@ -34,6 +34,7 @@ import AdminDiscussions from './pages/Admin/Discussions';
 import AdminAnnouncements from './pages/Admin/Announcements';
 import Classrooms from './pages/Admin/Classrooms';
 import Students from './pages/Admin/Students';
+import StudentDetail from './pages/Admin/StudentDetail';
 
 // Layouts & Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -155,6 +156,7 @@ function App() {
           <Route path="quizzes/:id/edit" element={<QuizEdit />} />
           <Route path="classrooms" element={<Classrooms />} />
           <Route path="students" element={<Students />} />
+          <Route path="students/:userId" element={<StudentDetail />} />
 
           <Route path="analytics" element={<Analytics />} />
           <Route path="attempts/:attemptId" element={<AttemptDetail />} />

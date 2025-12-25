@@ -190,6 +190,7 @@ export const userAPI = {
   getClassroomTopicsWithVideos: (classroomId, params) =>
     api.get(`/classrooms/${classroomId}/topics`, { params }),
   getAllPublishedTopics: () => api.get('/classrooms/published/all'),
+  markVideoWatched: (videoId) => api.post(`/classrooms/video/${videoId}/watched`),
   
   // Assignments
   getAssignments: (params) => api.get('/assignments', { params }),

@@ -91,6 +91,11 @@ export const downloadNote = async (req, res) => {
     note.downloads += 1;
     await note.save();
 
+    // Track read progress (if not already read)
+    if (req.user && !req.user.readNotes.includes(note._id)) {
+      await req.user.updateOne({ $addToSet: { readNotes: note._id } });
+    }
+
     // Award XP to uploader
     await gamificationService.awardXP(note.uploadedBy, 2, 'Note downloaded');
 

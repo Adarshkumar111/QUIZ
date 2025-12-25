@@ -76,3 +76,32 @@ export const getUserClassroomTopicsWithVideos = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Mark video as watched
+// @route   POST /api/classrooms/video/:videoId/watched
+// @access  Private
+export const markVideoWatched = async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if already watched
+    const alreadyWatched = (user.watchedVideos || []).some(
+      (v) => v.videoId === videoId
+    );
+
+    if (!alreadyWatched) {
+      if (!user.watchedVideos) user.watchedVideos = [];
+      user.watchedVideos.push({ videoId });
+      await user.save();
+    }
+
+    res.json({ message: 'Video marked as watched', watchedVideos: user.watchedVideos });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -405,6 +405,13 @@ const Classrooms = () => {
   const [search, setSearch] = useState('');
   const [playingVideo, setPlayingVideo] = useState(null);
 
+  const handlePlayVideo = (video) => {
+    setPlayingVideo(video);
+    if (video) {
+      userAPI.markVideoWatched(video._id || video.id).catch(() => {});
+    }
+  };
+
   const selectedTopic = useMemo(
     () => allTopics.find((t) => (t._id || t.id) === selectedTopicId),
     [allTopics, selectedTopicId]
@@ -593,7 +600,7 @@ const Classrooms = () => {
                     <div className="p-3">
                       <h3 className="font-medium text-slate-100 text-sm line-clamp-2 mb-2">{v.title}</h3>
                       <button
-                        onClick={() => setPlayingVideo(v)}
+                        onClick={() => handlePlayVideo(v)}
                         className="w-full py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-medium hover:from-cyan-400 hover:to-blue-500 transition-all flex items-center justify-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -698,7 +705,7 @@ const Classrooms = () => {
                         
                         {/* Always show Watch Now button */}
                         <button
-                          onClick={() => setPlayingVideo(v)}
+                          onClick={() => handlePlayVideo(v)}
                           className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium hover:from-cyan-400 hover:to-blue-500 transition-all flex items-center justify-center gap-2"
                         >
                           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

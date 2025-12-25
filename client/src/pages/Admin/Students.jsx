@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { adminAPI } from '../../services/api';
 
 const Students = () => {
+  const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -84,7 +86,8 @@ const Students = () => {
                     key={student._id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="hover:bg-slate-900/40 transition-colors"
+                    onClick={() => navigate(`/admin/students/${student._id}`)}
+                    className="hover:bg-slate-900/40 transition-colors cursor-pointer group"
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">

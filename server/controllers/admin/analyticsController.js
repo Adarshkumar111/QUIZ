@@ -4,6 +4,7 @@ import Note from '../../models/Note.js';
 import User from '../../models/User.js';
 import Discussion from '../../models/Discussion.js';
 import Ticket from '../../models/Ticket.js';
+import Classroom from '../../models/Classroom.js';
 
 // @desc    Get quiz performance analytics
 // @route   GET /api/admin/analytics/quiz-performance
@@ -136,7 +137,7 @@ export const getUserQuizPerformanceDetail = async (req, res) => {
     const { userId } = req.params;
 
     const user = await User.findById(userId).select(
-      'username email avatar course semester xpPoints level'
+      'username email avatar course semester xpPoints level readNotes watchedVideos lastSeenAt isActive createdAt'
     );
 
     if (!user) {
@@ -149,6 +150,40 @@ export const getUserQuizPerformanceDetail = async (req, res) => {
     })
       .populate('quiz', 'title subject totalMarks')
       .sort({ submittedAt: -1 });
+
+    // --- Calculate Overall Progress ---
+    const totalQuizzesAvailable = await Quiz.countDocuments({ 
+      status: 'published', 
+      deletedAt: null 
+    });
+    const totalNotesAvailable = await Note.countDocuments({ 
+      status: 'approved', 
+      deletedAt: null 
+    });
+    const classrooms = await Classroom.find({ deletedAt: null });
+    let totalVideosAvailable = 0;
+    classrooms.forEach(c => {
+      (c.topics || []).forEach(t => {
+        if (t.published) totalVideosAvailable += (t.videos || []).length;
+      });
+    });
+
+    const totalContent = totalQuizzesAvailable + totalNotesAvailable + totalVideosAvailable;
+    
+    const uniqueQuizzesAttempted = await QuizAttempt.distinct('quiz', {
+      student: userId,
+      status: { $in: ['submitted', 'graded'] },
+    });
+    
+    const completedQuizzesCount = uniqueQuizzesAttempted.length;
+    const readNotesCount = user.readNotes?.length || 0;
+    const watchedVideosCount = user.watchedVideos?.length || 0;
+    const userContent = completedQuizzesCount + readNotesCount + watchedVideosCount;
+
+    let progressPercentage = 0;
+    if (totalContent > 0) {
+      progressPercentage = Math.round((userContent / totalContent) * 100);
+    }
 
     const summary = {
       totalAttempts: attempts.length,
@@ -167,6 +202,11 @@ export const getUserQuizPerformanceDetail = async (req, res) => {
           : Math.max(...attempts.map((a) => a.percentage || 0)),
       lastAttemptAt:
         attempts.length === 0 ? null : attempts[0].submittedAt || attempts[0].createdAt,
+      readNotesCount,
+      watchedVideosCount,
+      progressPercentage,
+      totalContent,
+      userContent
     };
 
     res.json({ user, summary, attempts });
