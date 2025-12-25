@@ -1,5 +1,31 @@
 import Classroom from '../../models/Classroom.js';
 
+// @desc    Get all published topics from all classrooms (public access for all users)
+// @route   GET /api/classrooms/published/all
+// @access  Private
+export const getAllPublishedTopics = async (req, res) => {
+  try {
+    // Get all classrooms with published topics
+    const classrooms = await Classroom.find({
+      deletedAt: null,
+    }).select('topics');
+
+    // Extract all published topics from all classrooms
+    const allPublishedTopics = [];
+    
+    classrooms.forEach((classroom) => {
+      if (classroom.topics && classroom.topics.length > 0) {
+        const publishedTopics = classroom.topics.filter(topic => topic.published === true);
+        allPublishedTopics.push(...publishedTopics);
+      }
+    });
+
+    res.json(allPublishedTopics);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Get classroom topics with videos (read-only for students)
 // @route   GET /api/classrooms/:classroomId/topics
 // @access  Private
