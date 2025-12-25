@@ -13,7 +13,6 @@ const userLinks = [
   { to: '/assignments', label: 'Assignments' },
   { to: '/classrooms', label: 'Classrooms' },
   { to: '/announcements', label: 'Announcements' },
-  { to: '/whiteboard/demo', label: 'Whiteboard' },
   { to: '/profile', label: 'Profile' },
 ];
 
