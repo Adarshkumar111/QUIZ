@@ -489,3 +489,29 @@ export const getAllStudents = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Get all submissions for a specific quiz
+// @route   GET /api/admin/analytics/quiz-submissions/:quizId
+// @access  Private/Admin
+export const getQuizSubmissions = async (req, res) => {
+  try {
+    const { quizId } = req.params;
+
+    const quiz = await Quiz.findById(quizId).select('title subject totalMarks');
+    if (!quiz) {
+      return res.status(404).json({ message: 'Quiz not found' });
+    }
+
+    const attempts = await QuizAttempt.find({ quiz: quizId, status: { $in: ['submitted', 'graded'] } })
+      .populate('student', 'username email avatar')
+      .sort({ score: -1, timeTaken: 1 });
+
+    res.json({
+      quiz,
+      count: attempts.length,
+      submissions: attempts,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

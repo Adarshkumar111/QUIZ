@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { adminAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -31,6 +31,11 @@ const QuizBuilder = () => {
   });
   const [attachmentFile, setAttachmentFile] = useState(null);
   const [pendingDeleteQuiz, setPendingDeleteQuiz] = useState(null);
+  const [viewingSubmissionsId, setViewingSubmissionsId] = useState(null);
+  const [submissionsData, setSubmissionsData] = useState(null);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [question, setQuestion] = useState({ text: '', options: ['', '', '', ''], correctIndex: 0, marks: 1 });
+  const [editingQuestionId, setEditingQuestionId] = useState(null);
 
   const refreshQuizDetails = async (idToLoad = quizId) => {
     if (!idToLoad) return;
@@ -323,6 +328,27 @@ const QuizBuilder = () => {
     }
   };
 
+  const handleViewSubmissions = async (id) => {
+    try {
+      setViewingSubmissionsId(id);
+      setLoadingSubmissions(true);
+      const res = await adminAPI.getQuizSubmissions(id);
+      setSubmissionsData(res.data);
+    } catch (error) {
+       toast.error(error.response?.data?.message || 'Failed to load submissions');
+       setViewingSubmissionsId(null);
+    } finally {
+       setLoadingSubmissions(false);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    if (!seconds) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
 
   const stats = useMemo(() => ({
     total: allQuizzes.length,
@@ -452,6 +478,13 @@ const QuizBuilder = () => {
                         </td>
                         <td className="px-6 py-4 text-right">
                            <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => handleViewSubmissions(q._id)}
+                                className="p-1.5 rounded-lg border border-slate-700 hover:border-emerald-500 hover:text-emerald-400 bg-slate-800/40"
+                                title="View Submissions"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                              </button>
                               <button
                                 onClick={() => navigate(`/admin/quizzes/${q._id}/edit`)}
                                 className="p-1.5 rounded-lg border border-slate-700 hover:border-primary-500 hover:text-primary-400 bg-slate-800/40"
@@ -782,6 +815,148 @@ const QuizBuilder = () => {
           </motion.div>
         </div>
       )}
+      {/* Quiz History / Submissions Modal */}
+      <AnimatePresence>
+        {viewingSubmissionsId && (
+          <QuizSubmissionsModal 
+            isOpen={!!viewingSubmissionsId} 
+            onClose={() => {
+              setViewingSubmissionsId(null);
+              setSubmissionsData(null);
+            }}
+            data={submissionsData}
+            loading={loadingSubmissions}
+            formatTime={formatTime}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// --- New Components ---
+
+const QuizSubmissionsModal = ({ isOpen, onClose, data, loading, formatTime }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, scale: 1.05 }}
+        className="card max-w-4xl w-full h-[80vh] flex flex-col border border-slate-800 shadow-2xl overflow-hidden"
+      >
+        {/* Modal Header */}
+        <div className="px-6 py-5 border-b border-slate-800 bg-slate-900/40 flex items-center justify-between">
+           <div>
+              <h2 className="text-xl font-black text-slate-50 tracking-tight">Quiz Submission Report</h2>
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">
+                 {loading ? 'Fetching participants...' : `${data?.quiz?.title || 'System Quiz'} • ${data?.submissions?.length || 0} Participated`}
+              </p>
+           </div>
+           <button 
+             onClick={onClose}
+             className="h-10 w-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 flex items-center justify-center border border-slate-700 transition-colors"
+           >
+              ✕
+           </button>
+        </div>
+
+        {/* Modal Content */}
+        <div className="flex-1 overflow-y-auto p-0 custom-scrollbar">
+           {loading ? (
+             <div className="flex flex-col items-center justify-center h-full py-20 space-y-4">
+                <div className="h-12 w-12 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin" />
+                <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Compiling Analytics Data...</p>
+             </div>
+           ) : !data || data.submissions?.length === 0 ? (
+             <div className="flex flex-col items-center justify-center h-full py-20 text-center">
+                <span className="text-5xl mb-4 grayscale">🏜️</span>
+                <h3 className="text-lg font-bold text-slate-200">No Participants Recorded</h3>
+                <p className="text-xs text-slate-500 max-w-xs mt-2 font-medium">This quiz hasn't received any graded submissions yet. Data will appear here once students complete the assessment.</p>
+             </div>
+           ) : (
+             <table className="w-full text-left border-collapse">
+                <thead className="sticky top-0 bg-slate-900 z-10">
+                   <tr className="border-b border-slate-800">
+                      <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500">Student Identity</th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500">Performance</th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500">Time Taken</th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500">Attempted Date</th>
+                      <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 text-right">Action</th>
+                   </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/50">
+                   {data.submissions.map((s, idx) => (
+                     <tr key={s._id} className="hover:bg-slate-800/20 transition-colors group">
+                        <td className="px-6 py-4">
+                           <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-xl bg-linear-to-tr from-slate-800 to-slate-700 flex items-center justify-center text-xs font-black text-slate-300 border border-slate-700 group-hover:border-primary-500/30 transition-colors uppercase">
+                                 {s.student?.username?.[0]}
+                              </div>
+                              <div className="flex flex-col">
+                                 <span className="text-sm font-bold text-slate-100">{s.student?.username || 'Redacted User'}</span>
+                                 <span className="text-[10px] text-slate-500 font-medium">{s.student?.email}</span>
+                              </div>
+                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                           <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                 <span className="text-sm font-black text-slate-50">{s.percentage}%</span>
+                                 <div className="h-1.5 w-16 bg-slate-800 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full rounded-full ${s.percentage >= 60 ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                                      style={{ width: `${s.percentage}%` }}
+                                    />
+                                 </div>
+                              </div>
+                              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
+                                 {s.score} / {s.maxScore} Marks
+                              </span>
+                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                           <div className="flex items-center gap-2">
+                              <span className="text-xl">⏱</span>
+                              <span className="text-xs font-bold text-slate-300">{formatTime(s.timeTaken)}</span>
+                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                           <span className="text-[11px] font-medium text-slate-400">
+                              {s.submittedAt ? new Date(s.submittedAt).toLocaleString() : 'N/A'}
+                           </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                           {/* Using window.location.href or a simple navigate logic if available */}
+                           <Link 
+                             to={`/admin/attempts/${s._id}`}
+                             className="px-3 py-1.5 rounded-lg bg-primary-600/10 text-primary-400 text-[10px] font-black uppercase hover:bg-primary-600 hover:text-white transition-all inline-block border border-primary-500/20"
+                           >
+                              Inspect Detailed
+                           </Link>
+                        </td>
+                     </tr>
+                   ))}
+                </tbody>
+             </table>
+           )}
+        </div>
+
+        {/* Modal Footer */}
+        <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/40 flex items-center justify-between">
+           <p className="text-[9px] text-slate-500 font-bold uppercase italic">
+              * Data sorted by score (primary) and time efficiency (secondary)
+           </p>
+           <button 
+             onClick={onClose}
+             className="px-6 py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-black uppercase hover:bg-slate-700 transition-all"
+           >
+              Close Analyzer
+           </button>
+        </div>
+      </motion.div>
     </div>
   );
 };

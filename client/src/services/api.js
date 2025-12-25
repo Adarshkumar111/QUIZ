@@ -121,6 +121,8 @@ export const adminAPI = {
     api.get(`/admin/analytics/user-performance/${userId}`),
   getAttemptDetail: (attemptId) =>
     api.get(`/admin/quizzes/attempts/${attemptId}`),
+  getQuizSubmissions: (quizId) =>
+    api.get(`/admin/analytics/quiz-submissions/${quizId}`),
 
   // Groups (global)
   getGroups: () => api.get('/admin/groups'),

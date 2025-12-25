@@ -9,6 +9,7 @@ import {
   getUserQuizPerformanceSummary,
   getUserQuizPerformanceDetail,
   getAllStudents,
+  getQuizSubmissions,
 } from '../../controllers/admin/analyticsController.js';
 import { protect, authorize } from '../../middleware/auth.js';
 
@@ -26,5 +27,6 @@ router.get('/dashboard', getDashboardStats);
 router.get('/user-performance', getUserQuizPerformanceSummary);
 router.get('/user-performance/:userId', getUserQuizPerformanceDetail);
 router.get('/all-students', getAllStudents);
+router.get('/quiz-submissions/:quizId', getQuizSubmissions);
 
 export default router;
