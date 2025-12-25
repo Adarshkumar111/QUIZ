@@ -5,6 +5,7 @@ import User from '../../models/User.js';
 import Discussion from '../../models/Discussion.js';
 import Ticket from '../../models/Ticket.js';
 import Classroom from '../../models/Classroom.js';
+import { performanceService } from '../../services/performanceService.js';
 
 // @desc    Get quiz performance analytics
 // @route   GET /api/admin/analytics/quiz-performance
@@ -185,6 +186,8 @@ export const getUserQuizPerformanceDetail = async (req, res) => {
       progressPercentage = Math.round((userContent / totalContent) * 100);
     }
 
+    const globalRank = await performanceService.getGlobalRank(userId);
+
     const summary = {
       totalAttempts: attempts.length,
       avgPercentage:
@@ -206,7 +209,8 @@ export const getUserQuizPerformanceDetail = async (req, res) => {
       watchedVideosCount,
       progressPercentage,
       totalContent,
-      userContent
+      userContent,
+      globalRank
     };
 
     res.json({ user, summary, attempts });
@@ -464,9 +468,14 @@ export const getAllStudents = async (req, res) => {
       ];
     }
 
-    const students = await User.find(query)
+    const studentsRaw = await User.find(query)
       .select('username email avatar course semester xpPoints level createdAt isActive isBanned isMuted')
       .sort({ createdAt: -1 });
+
+    const students = await Promise.all(studentsRaw.map(async (s) => {
+      const globalRank = await performanceService.getGlobalRank(s._id);
+      return { ...s.toObject(), globalRank };
+    }));
 
     res.json({ students });
   } catch (error) {

@@ -76,9 +76,9 @@ const StudentDetail = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Overall Progress" value={`${summary.progressPercentage}%`} sub={`${summary.userContent} / ${summary.totalContent} items`} color="primary" />
+        <StatCard label="Global Rank" value={`#${summary.globalRank || 'N/A'}`} sub="Based on total XP" color="amber" />
         <StatCard label="Avg Score" value={`${Math.round(summary.avgPercentage)}%`} sub={`${summary.totalAttempts} Quiz Attempts`} color="secondary" />
-        <StatCard label="Notes Read" value={summary.readNotesCount} sub="Notes opened by user" color="emerald" />
-        <StatCard label="Videos Watched" value={summary.watchedVideosCount} sub="Videos viewed by user" color="sky" />
+        <StatCard label="Notes / Videos" value={`${summary.readNotesCount} / ${summary.watchedVideosCount}`} sub="Content consumption" color="emerald" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -88,6 +88,7 @@ const StudentDetail = () => {
             <h3 className="text-lg font-semibold text-slate-50 mb-4">Account Analytics</h3>
             <div className="space-y-4">
                <InfoRow label="Experience Points" value={`${user.xpPoints} XP (Level ${user.level})`} />
+               <InfoRow label="Global Leaderboard" value={`Rank #${summary.globalRank || 'N/A'}`} />
                <InfoRow label="Member Since" value={new Date(user.createdAt).toLocaleDateString()} />
                <InfoRow label="Last Active" value={user.lastSeenAt ? new Date(user.lastSeenAt).toLocaleString() : 'Never'} />
                <InfoRow label="Best Quiz Score" value={`${summary.bestPercentage}%`} />
@@ -175,6 +176,7 @@ const StatCard = ({ label, value, sub, color }) => {
     secondary: 'text-secondary-400 border-secondary-500/20',
     emerald: 'text-emerald-400 border-emerald-500/20',
     sky: 'text-sky-400 border-sky-500/20',
+    amber: 'text-amber-400 border-amber-500/20',
   };
   return (
     <div className={`card p-5 border bg-slate-900/40 ${colors[color] || 'border-slate-800'}`}>

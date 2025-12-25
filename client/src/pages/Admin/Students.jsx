@@ -60,6 +60,7 @@ const Students = () => {
               <tr className="border-b border-slate-800 bg-slate-900/50">
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Student</th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Course / Sem</th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Rank</th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Level / XP</th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Joined</th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-400 text-right">Status</th>
@@ -107,6 +108,12 @@ const Students = () => {
                     <td className="px-6 py-4">
                       <p className="text-sm text-slate-300">{student.course || 'N/A'}</p>
                       <p className="text-xs text-slate-500">Sem {student.semester || '0'}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                           <span className="text-sm font-bold text-amber-400">#{student.globalRank || 'N/A'}</span>
+                           <span className="text-[10px] text-slate-500 uppercase font-black">Global</span>
+                        </div>
                     </td>
                     <td className="px-6 py-4 text-sm font-medium">
                         <span className="text-primary-400">Lvl {student.level || 1}</span>

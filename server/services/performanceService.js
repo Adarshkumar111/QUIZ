@@ -54,14 +54,24 @@ export const performanceService = {
   },
 
   /**
-   * Get student's GLOBAL rank
+   * Get student's GLOBAL rank with lazy-sync
    */
   getGlobalRank: async (userId) => {
     try {
       const redis = getRedisClient();
       const globalKey = 'leaderboard:global';
       if (redis) {
-        const rank = await redis.zRevRank(globalKey, userId.toString());
+        let rank = await redis.zRevRank(globalKey, userId.toString());
+        
+        // Lazy-sync: If user not in Redis, add them and try again
+        if (rank === null) {
+          const user = await User.findById(userId).select('xpPoints');
+          if (user) {
+            await redis.zAdd(globalKey, { score: user.xpPoints || 0, value: userId.toString() });
+            rank = await redis.zRevRank(globalKey, userId.toString());
+          }
+        }
+        
         return rank !== null ? rank + 1 : 'N/A';
       }
       return 'N/A';
