@@ -5,6 +5,7 @@ import Assignment from '../../models/Assignment.js';
 import Notification from '../../models/Notification.js';
 import Classroom from '../../models/Classroom.js';
 import gamificationService from '../../services/gamificationService.js';
+import { performanceService } from '../../services/performanceService.js';
 
 // @desc    Get saved notes
 // @route   GET /api/dashboard/saved-notes
@@ -326,6 +327,10 @@ export const getDashboardOverview = async (req, res) => {
     // Cap at 100% just in case
     if (progressPercentage > 100) progressPercentage = 100;
 
+    // Get Global Rank and Daily Top Performers
+    const globalRank = await performanceService.getGlobalRank(req.user._id);
+    const topPerformers = await performanceService.getTopPerformers();
+
     res.json({
       user: {
         username: req.user.username,
@@ -334,20 +339,21 @@ export const getDashboardOverview = async (req, res) => {
         xpPoints: req.user.xpPoints,
         course: req.user.course,
         semester: req.user.semester,
+        globalRank
       },
       stats: {
-        totalQuizzes, // This was "graded" quizzes count from original code, kept for legacy if needed, but UI might use progressPercentage
+        totalQuizzes, 
         savedNotesCount,
-        streak, // Return calculated streak
+        streak, 
         unreadNotifications,
-        // New progress stats
         progressPercentage,
         userContent,
         totalContent,
         completedQuizzesCount,
         readNotesCount
       },
-      recentQuizzes, // Return real recent quizzes
+      recentQuizzes, 
+      topPerformers
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

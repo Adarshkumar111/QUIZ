@@ -1,6 +1,7 @@
 import User from '../../models/User.js';
 import fileService from '../../services/fileService.js';
 import gamificationService from '../../services/gamificationService.js';
+import { performanceService } from '../../services/performanceService.js';
 
 // @desc    Get user profile
 // @route   GET /api/profile
@@ -8,8 +9,12 @@ import gamificationService from '../../services/gamificationService.js';
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
+    const globalRank = await performanceService.getGlobalRank(req.user._id);
 
-    res.json(user);
+    res.json({
+      ...user.toObject(),
+      globalRank
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -55,14 +60,13 @@ export const updateProfile = async (req, res) => {
 export const getAchievements = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('badges xpPoints level');
-
-    const rank = await gamificationService.getUserRank(req.user._id);
+    const globalRank = await performanceService.getGlobalRank(req.user._id);
 
     res.json({
       badges: user.badges,
       xpPoints: user.xpPoints,
       level: user.level,
-      rank,
+      rank: globalRank,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

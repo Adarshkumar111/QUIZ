@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { userAPI } from '../../services/api';
+import socketService from '../../services/socket';
 
 
 
@@ -12,6 +13,22 @@ const Dashboard = () => {
   const [loadingQuizzes, setLoadingQuizzes] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
   const [savedNotes, setSavedNotes] = useState([]);
+  const [topPerformers, setTopPerformers] = useState([]);
+
+  useEffect(() => {
+    // Join rankings room
+    socketService.joinRankings();
+
+    // Listen for real-time leaderboard updates
+    socketService.onTopPerformersUpdate(({ topPerformers }) => {
+      setTopPerformers(topPerformers);
+    });
+
+    return () => {
+      socketService.leaveRankings();
+      socketService.offTopPerformersUpdate();
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -27,12 +44,14 @@ const Dashboard = () => {
         
         if (!mounted) return;
         setAvailableQuizzes(quizzesRes.data || []);
-        // Merge upcoming events into dashboard data for easier passing or separate state
         setDashboardData({
             ...dashboardRes.data,
             upcomingEvents: upcomingRes.data
         });
         setSavedNotes(savedNotesRes.data || []);
+        if (dashboardRes.data?.topPerformers) {
+          setTopPerformers(dashboardRes.data.topPerformers);
+        }
       } catch (error) {
         console.error("Failed to load dashboard data", error);
       } finally {
@@ -97,9 +116,14 @@ const Dashboard = () => {
                  </span>
               </div>
             </div>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300">
-              Level {dashboardData?.user?.level || 1}
-            </span>
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300">
+                Level {dashboardData?.user?.level || 1}
+              </span>
+              <span className="text-[10px] font-bold text-primary-400 uppercase tracking-tighter">
+                Global Rank: #{dashboardData?.user?.globalRank || '...'}
+              </span>
+            </div>
           </div>
           <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
             <motion.div 
@@ -119,9 +143,12 @@ const Dashboard = () => {
             <p className="text-xs text-slate-400 mb-1">Weekly streak</p>
             <p className="text-2xl font-semibold text-slate-50">{dashboardData?.stats?.streak || 0} days</p>
           </div>
-          <p className="text-xs text-primary-300 mt-2">
-            {loadingQuizzes ? 'Checking new quizzes...' : `${newQuizCount} new quizzes added`}
-          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary-500 animate-pulse" />
+            <p className="text-[10px] text-primary-300 uppercase font-bold tracking-wider">
+              {loadingQuizzes ? 'Syncing...' : 'Real-time Stats'}
+            </p>
+          </div>
         </div>
       </motion.div>
 
@@ -224,49 +251,62 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="card">
-            <h2 className="text-sm font-semibold text-slate-50 mb-3">Upcoming</h2>
-            <ul className="space-y-2 text-xs text-slate-300">
-              {/* Upcoming Quizzes */}
-              {dashboardData?.upcomingEvents?.upcomingQuizzes?.map(quiz => (
-                <li key={quiz._id} className="flex items-center justify-between">
-                  <span className="line-clamp-1">{quiz.title}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-300 text-[11px] whitespace-nowrap">
-                    {new Date(quiz.startTime).toLocaleDateString()}
-                  </span>
-                </li>
-              ))}
-
-              {/* Pending Assignments */}
-              {dashboardData?.upcomingEvents?.pendingAssignments?.map(assignment => (
-                <li key={assignment._id} className="flex items-center justify-between">
-                  <span className="line-clamp-1">{assignment.title}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-[11px] whitespace-nowrap">
-                    Due {new Date(assignment.dueDate).toLocaleDateString()}
-                  </span>
-                </li>
-              ))}
-
-              {/* Latest Announcement */}
-              {dashboardData?.upcomingEvents?.announcements?.length > 0 && (
-                <li className="flex items-center justify-between group cursor-pointer">
-                  <div className="flex-1">
-                     <span className="text-slate-400 block text-[10px] uppercase mb-0.5">Latest Announcement</span>
-                     <Link to="/announcements" className="line-clamp-1 group-hover:text-primary-400 transition-colors">
-                        {dashboardData.upcomingEvents.announcements[0].title}
-                     </Link>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 text-[11px]">New</span>
-                </li>
+          <div className="card border-primary-500/10 bg-gradient-to-br from-slate-900/60 to-primary-500/5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-bold text-slate-50 uppercase tracking-wider">Daily Champions</h2>
+                <p className="text-[10px] text-slate-400 mt-0.5">Top performers of the day</p>
+              </div>
+              <span className="flex items-center gap-1 self-start">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] text-emerald-400 font-medium tracking-widest">LIVE</span>
+              </span>
+            </div>
+            
+            <div className="space-y-3">
+              {topPerformers.length === 0 ? (
+                <p className="text-xs text-slate-500 text-center py-4 italic">Competition is just heating up...</p>
+              ) : (
+                topPerformers.slice(0, 3).map((performer, idx) => (
+                  <motion.div 
+                    key={performer.userId}
+                    layout
+                    className="flex items-center justify-between p-2 rounded-lg bg-slate-800/40 border border-slate-700/50"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative">
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs ring-2 ring-slate-900 overflow-hidden ${
+                          idx === 0 ? 'bg-amber-400 text-slate-900' : 
+                          idx === 1 ? 'bg-slate-300 text-slate-900' : 
+                          'bg-amber-700 text-slate-100'
+                        }`}>
+                          {performer.avatar ? (
+                            <img src={performer.avatar} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            performer.username[0].toUpperCase()
+                          )}
+                        </div>
+                        <div className={`absolute -top-1 -left-1 h-4 w-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-lg ${
+                          idx === 0 ? 'bg-amber-400 text-slate-900' : 
+                          idx === 1 ? 'bg-slate-300 text-slate-900' : 
+                          'bg-amber-700 text-slate-100'
+                        }`}>
+                          {idx + 1}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-100">{performer.username}</p>
+                        <p className="text-[8px] text-slate-500 uppercase font-black">Daily MVP</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-black text-primary-400">{Math.round(performer.score)}</p>
+                      <p className="text-[8px] text-slate-500 font-bold uppercase">Points</p>
+                    </div>
+                  </motion.div>
+                ))
               )}
-
-              {/* Empty State */}
-              {!dashboardData?.upcomingEvents?.upcomingQuizzes?.length && 
-               !dashboardData?.upcomingEvents?.pendingAssignments?.length && 
-               !dashboardData?.upcomingEvents?.announcements?.length && (
-                 <li className="text-slate-500 text-center py-2">No upcoming events</li>
-              )}
-            </ul>
+            </div>
           </div>
         </motion.div>
       </div>

@@ -185,6 +185,15 @@ class SocketService {
     this.off('top_performers_update', callback);
   }
 
+  // Student Rankings
+  joinRankings() {
+    this.emit('join_rankings');
+  }
+
+  leaveRankings() {
+    this.emit('leave_rankings');
+  }
+
   // Generic event listeners
   on(event, callback) {
     if (this.socket) {

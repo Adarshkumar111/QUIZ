@@ -16,13 +16,12 @@ export const performanceService = {
     try {
       const redis = getRedisClient();
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      const key = `leaderboard:daily:${today}`;
+      const dailyKey = `leaderboard:daily:${today}`;
 
       if (redis) {
-        // Increment score in Redis ZSET
-        await redis.zIncrBy(key, points, userId.toString());
-        // Set expiry to 48 hours to clean up old leaderboards
-        await redis.expire(key, 172800);
+        // 1. Increment DAILY score
+        await redis.zIncrBy(dailyKey, points, userId.toString());
+        await redis.expire(dailyKey, 172800);
 
         // Fetch user info for broadcast if reason exists
         let userInfo = null;
@@ -31,11 +30,44 @@ export const performanceService = {
            userInfo = { username: user?.username || 'Student', points, reason };
         }
 
-        // Notify admins of the update
+        // Notify admins (and potentially users) of the update
         await performanceService.broadcastTopPerformers(userInfo);
       }
     } catch (err) {
       console.error('Error updating performance score:', err.message);
+    }
+  },
+
+  /**
+   * Update student GLOBAL score (based on total XP)
+   */
+  updateGlobalScore: async (userId, totalXP) => {
+    try {
+      const redis = getRedisClient();
+      const globalKey = 'leaderboard:global';
+      if (redis) {
+        await redis.zAdd(globalKey, { score: totalXP, value: userId.toString() });
+      }
+    } catch (err) {
+      console.error('Error updating global score:', err.message);
+    }
+  },
+
+  /**
+   * Get student's GLOBAL rank
+   */
+  getGlobalRank: async (userId) => {
+    try {
+      const redis = getRedisClient();
+      const globalKey = 'leaderboard:global';
+      if (redis) {
+        const rank = await redis.zRevRank(globalKey, userId.toString());
+        return rank !== null ? rank + 1 : 'N/A';
+      }
+      return 'N/A';
+    } catch (err) {
+      console.error('Error getting global rank:', err.message);
+      return 'N/A';
     }
   },
 
@@ -86,7 +118,12 @@ export const performanceService = {
     try {
       const io = getIO();
       const topPerformers = await performanceService.getTopPerformers();
+      
+      // Broadcast to admins (includes recent activity details)
       io.to('admin:dashboard').emit('top_performers_update', { topPerformers, recentActivity });
+      
+      // Broadcast to students (includes only the leaderboard for motivation)
+      io.to('rankings:live').emit('top_performers_update', { topPerformers });
     } catch (err) {
       // Socket not ready yet or other error
       console.warn('Could not broadcast top performers:', err.message);

@@ -26,6 +26,18 @@ export const initAdminSocket = () => {
         console.log(`🔌 Admin left dashboard: ${socket.userId}`);
       });
     }
+
+    // Allow everyone to join the live rankings room
+    socket.on('join_rankings', async () => {
+      socket.join('rankings:live');
+      // Push initial data
+      const topPerformers = await performanceService.getTopPerformers();
+      socket.emit('top_performers_update', { topPerformers });
+    });
+
+    socket.on('leave_rankings', () => {
+      socket.leave('rankings:live');
+    });
   });
 };
 

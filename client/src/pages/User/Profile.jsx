@@ -182,6 +182,10 @@ const Profile = () => {
                   <div className="text-3xl font-black text-indigo-400 mb-1">{profile.xpPoints || 0}</div>
                   <div className="text-xs text-slate-500 font-medium uppercase">XP Earned</div>
                 </div>
+                <div className="p-4 bg-slate-950/50 rounded-xl border border-slate-800 col-span-2">
+                  <div className="text-3xl font-black text-primary-400 mb-1">#{profile.globalRank || '...'}</div>
+                  <div className="text-xs text-slate-500 font-medium uppercase tracking-widest">Global Rank</div>
+                </div>
               </div>
             </motion.div>
 

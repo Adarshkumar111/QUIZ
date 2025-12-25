@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
 import { getIO } from '../config/socket.js';
+import { performanceService } from './performanceService.js';
 
 // Badge definitions
 const BADGES = {
@@ -53,6 +54,9 @@ class GamificationService {
       user.addXP(points);
       await user.save();
 
+      // Sync with Redis Global Leaderboard
+      await performanceService.updateGlobalScore(userId, user.xpPoints);
+
       // Check for level up
       if (user.level > oldLevel) {
         await this.notifyLevelUp(user, user.level);
@@ -97,6 +101,9 @@ class GamificationService {
       }
 
       await user.save();
+
+      // Sync with Redis Global Leaderboard
+      await performanceService.updateGlobalScore(userId, user.xpPoints);
 
       // Send notification
       await this.notifyBadgeEarned(user, badge);
