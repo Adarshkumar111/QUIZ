@@ -102,6 +102,9 @@ export const adminAPI = {
     api.post(`/admin/classrooms/${id}/topics/${topicId}/videos`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  deleteClassroomTopic: (id, topicId) => api.delete(`/admin/classrooms/${id}/topics/${topicId}`),
+  removeClassroomTopicVideo: (id, topicId, videoId) =>
+    api.delete(`/admin/classrooms/${id}/topics/${topicId}/videos/${videoId}`),
   
   // Analytics
   getDashboardStats: () => api.get('/admin/analytics/dashboard'),

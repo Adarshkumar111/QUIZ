@@ -210,6 +210,40 @@ export const getDashboardOverview = async (req, res) => {
       status: 'graded',
     });
 
+    // --- Streak Logic ---
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Normalize to midnight
+    
+    let streak = req.user.streak || 0;
+    let lastActive = req.user.lastActiveDate ? new Date(req.user.lastActiveDate) : null;
+    let lastActiveMidnight = lastActive ? new Date(lastActive.getFullYear(), lastActive.getMonth(), lastActive.getDate()) : null;
+
+    if (!lastActiveMidnight) {
+      // First time active
+      streak = 1;
+      req.user.streak = streak;
+      req.user.lastActiveDate = now;
+      await req.user.save();
+    } else {
+      const diffTime = Math.abs(today - lastActiveMidnight);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+      if (diffDays === 1) {
+        // Consecutive day
+        streak += 1;
+        req.user.streak = streak;
+        req.user.lastActiveDate = now;
+        await req.user.save();
+      } else if (diffDays > 1) {
+        // Streak broken
+        streak = 1;
+        req.user.streak = streak;
+        req.user.lastActiveDate = now;
+        await req.user.save();
+      } 
+      // If diffDays === 0 (same day), do nothing, keep streak
+    }
+
     const savedNotesCount = req.user.savedNotes?.length || 0;
 
     const unreadNotifications = await Notification.countDocuments({
@@ -248,6 +282,31 @@ export const getDashboardOverview = async (req, res) => {
 
     const userContent = completedQuizzesCount + readNotesCount;
 
+    // 4. Recent Quizzes (Real Data)
+    const recentAttempts = await QuizAttempt.find({
+      student: req.user._id,
+      status: { $in: ['submitted', 'graded'] },
+    })
+      .populate({
+        path: 'quiz',
+        select: 'title settings'
+      })
+      .sort({ submittedAt: -1 })
+      .limit(5);
+
+    const recentQuizzes = recentAttempts.map(attempt => {
+      const passingScore = attempt.quiz?.settings?.passingScore || 60;
+      const isPassed = attempt.percentage >= passingScore;
+      return {
+        _id: attempt._id,
+        title: attempt.quiz?.title || 'Unknown Quiz',
+        score: `${attempt.score} / ${attempt.maxScore}`,
+        percentage: `${Math.round(attempt.percentage)}%`,
+        status: isPassed ? 'Passed' : 'Failed',
+        isPassed
+      };
+    });
+
     // 3. Percentage
     let progressPercentage = 0;
     if (totalContent > 0) {
@@ -268,6 +327,7 @@ export const getDashboardOverview = async (req, res) => {
       stats: {
         totalQuizzes, // This was "graded" quizzes count from original code, kept for legacy if needed, but UI might use progressPercentage
         savedNotesCount,
+        streak, // Return calculated streak
         unreadNotifications,
         // New progress stats
         progressPercentage,
@@ -276,6 +336,7 @@ export const getDashboardOverview = async (req, res) => {
         completedQuizzesCount,
         readNotesCount
       },
+      recentQuizzes, // Return real recent quizzes
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

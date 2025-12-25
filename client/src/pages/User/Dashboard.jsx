@@ -5,10 +5,7 @@ import { userAPI } from '../../services/api';
 
 
 
-const recentQuizzes = [
-  { title: 'DBMS Weekly Quiz', score: '18 / 20', trend: '+8%', status: 'Improved' },
-  { title: 'JavaScript Fundamentals', score: '15 / 20', trend: '-5%', status: 'Retry' },
-];
+
 
 const Dashboard = () => {
   const [availableQuizzes, setAvailableQuizzes] = useState([]);
@@ -21,15 +18,20 @@ const Dashboard = () => {
 
     const load = async () => {
       try {
-        const [quizzesRes, dashboardRes, savedNotesRes] = await Promise.all([
+        const [quizzesRes, dashboardRes, savedNotesRes, upcomingRes] = await Promise.all([
           userAPI.getAvailableQuizzes(),
           userAPI.getDashboardOverview(),
-          userAPI.getSavedNotes()
+          userAPI.getSavedNotes(),
+          userAPI.getUpcomingEvents()
         ]);
         
         if (!mounted) return;
         setAvailableQuizzes(quizzesRes.data || []);
-        setDashboardData(dashboardRes.data);
+        // Merge upcoming events into dashboard data for easier passing or separate state
+        setDashboardData({
+            ...dashboardRes.data,
+            upcomingEvents: upcomingRes.data
+        });
         setSavedNotes(savedNotesRes.data || []);
       } catch (error) {
         console.error("Failed to load dashboard data", error);
@@ -115,7 +117,7 @@ const Dashboard = () => {
         <div className="card flex flex-col justify-between">
           <div>
             <p className="text-xs text-slate-400 mb-1">Weekly streak</p>
-            <p className="text-2xl font-semibold text-slate-50">5 days</p>
+            <p className="text-2xl font-semibold text-slate-50">{dashboardData?.stats?.streak || 0} days</p>
           </div>
           <p className="text-xs text-primary-300 mt-2">
             {loadingQuizzes ? 'Checking new quizzes...' : `${newQuizCount} new quizzes added`}
@@ -197,42 +199,73 @@ const Dashboard = () => {
         >
           <div className="card">
             <h2 className="text-sm font-semibold text-slate-50 mb-3">Recent quizzes</h2>
-            <div className="space-y-2 text-xs text-slate-300">
-              {recentQuizzes.map((quiz) => (
-                <div key={quiz.title} className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-slate-50">{quiz.title}</p>
-                    <p className="text-[11px] text-slate-400">Score: {quiz.score}</p>
+            <div className="space-y-4 text-xs text-slate-300">
+              {!dashboardData?.recentQuizzes?.length ? (
+                 <p className="text-slate-400">No quizzes attempted yet.</p>
+              ) : (
+                dashboardData.recentQuizzes.map((quiz) => (
+                  <div key={quiz._id} className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-slate-50 line-clamp-1">{quiz.title}</p>
+                      <p className="text-[11px] text-slate-400">Score: {quiz.score}</p>
+                    </div>
+                    <div className="text-right">
+                      <p
+                        className={`text-[11px] ${
+                          quiz.isPassed ? 'text-emerald-300' : 'text-amber-300'
+                        }`}
+                      >
+                        {quiz.percentage} ({quiz.status})
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p
-                      className={`text-[11px] ${
-                        quiz.status === 'Improved' ? 'text-emerald-300' : 'text-amber-300'
-                      }`}
-                    >
-                      {quiz.trend} ({quiz.status})
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
           <div className="card">
             <h2 className="text-sm font-semibold text-slate-50 mb-3">Upcoming</h2>
             <ul className="space-y-2 text-xs text-slate-300">
-              <li className="flex items-center justify-between">
-                <span>DBMS quiz – Module 3</span>
-                <span className="px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-300 text-[11px]">Tomorrow • 7 PM</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span>OS assignment submission</span>
-                <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-[11px]">In 3 days</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span>Announcements</span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 text-[11px]">2 unread</span>
-              </li>
+              {/* Upcoming Quizzes */}
+              {dashboardData?.upcomingEvents?.upcomingQuizzes?.map(quiz => (
+                <li key={quiz._id} className="flex items-center justify-between">
+                  <span className="line-clamp-1">{quiz.title}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-300 text-[11px] whitespace-nowrap">
+                    {new Date(quiz.startTime).toLocaleDateString()}
+                  </span>
+                </li>
+              ))}
+
+              {/* Pending Assignments */}
+              {dashboardData?.upcomingEvents?.pendingAssignments?.map(assignment => (
+                <li key={assignment._id} className="flex items-center justify-between">
+                  <span className="line-clamp-1">{assignment.title}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-[11px] whitespace-nowrap">
+                    Due {new Date(assignment.dueDate).toLocaleDateString()}
+                  </span>
+                </li>
+              ))}
+
+              {/* Latest Announcement */}
+              {dashboardData?.upcomingEvents?.announcements?.length > 0 && (
+                <li className="flex items-center justify-between group cursor-pointer">
+                  <div className="flex-1">
+                     <span className="text-slate-400 block text-[10px] uppercase mb-0.5">Latest Announcement</span>
+                     <Link to="/announcements" className="line-clamp-1 group-hover:text-primary-400 transition-colors">
+                        {dashboardData.upcomingEvents.announcements[0].title}
+                     </Link>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 text-[11px]">New</span>
+                </li>
+              )}
+
+              {/* Empty State */}
+              {!dashboardData?.upcomingEvents?.upcomingQuizzes?.length && 
+               !dashboardData?.upcomingEvents?.pendingAssignments?.length && 
+               !dashboardData?.upcomingEvents?.announcements?.length && (
+                 <li className="text-slate-500 text-center py-2">No upcoming events</li>
+              )}
             </ul>
           </div>
         </motion.div>

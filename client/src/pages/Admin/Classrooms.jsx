@@ -140,6 +140,36 @@ const Classrooms = () => {
     }
   };
 
+
+
+  const handleDeleteTopic = async (topicId) => {
+    if (!selectedClassroomId || !confirm('Are you sure you want to delete this topic?')) return;
+    try {
+      setError('');
+      await adminAPI.deleteClassroomTopic(selectedClassroomId, topicId);
+      setTopics((prev) => prev.filter((t) => (t._id || t.id) !== topicId));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete topic');
+    }
+  };
+
+  const handleRemoveVideo = async (topicId, videoId) => {
+    if (!selectedClassroomId || !confirm('Are you sure you want to remove this video?')) return;
+    try {
+      setError('');
+      await adminAPI.removeClassroomTopicVideo(selectedClassroomId, topicId, videoId);
+      setTopics((prev) =>
+        prev.map((t) =>
+          (t._id || t.id) === topicId
+            ? { ...t, videos: (t.videos || []).filter((v) => (v._id || v.id) !== videoId) }
+            : t
+        )
+      );
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to remove video');
+    }
+  };
+
   const startEditTopic = (topic) => {
     const id = topic._id || topic.id;
     setEditingTopicId(id);
@@ -159,8 +189,7 @@ const Classrooms = () => {
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold text-slate-50">Classrooms</h1>
           <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-            Manage classroom topics and attach videos (YouTube / Drive links or uploaded files)
-            so students can watch lectures topic-wise.
+            Manage classroom topics (playlists) and attach videos. directly upload or link videos.
           </p>
         </div>
       </div>
@@ -187,7 +216,6 @@ const Classrooms = () => {
                   key={c._id}
                   onClick={() => {
                     setSelectedClassroomId(c._id);
-                    setSelectedTopicId('');
                   }}
                   className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
                     selectedClassroomId === c._id
@@ -209,7 +237,7 @@ const Classrooms = () => {
         <div className="space-y-3 xl:col-span-2">
           <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-semibold text-slate-50">Topics</h2>
+              <h2 className="text-sm font-semibold text-slate-50">Topics (Playlists)</h2>
               {loadingTopics && (
                 <span className="text-[11px] text-slate-400">Loading...</span>
               )}
@@ -241,7 +269,7 @@ const Classrooms = () => {
                     disabled={creatingTopic || !newTopicName.trim()}
                     className="inline-flex items-center justify-center rounded-lg bg-primary-600 hover:bg-primary-500 disabled:opacity-60 disabled:cursor-not-allowed text-[11px] font-medium px-3 py-1.5 text-white"
                   >
-                    {creatingTopic ? 'Creating...' : 'Add topic'}
+                    {creatingTopic ? 'Creating...' : 'Add Topic (Playlist)'}
                   </button>
                 </form>
 
@@ -306,13 +334,22 @@ const Classrooms = () => {
                                   </button>
                                 </>
                               ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => startEditTopic(t)}
-                                  className="px-2 py-0.5 rounded-lg border border-slate-700 text-[10px] text-slate-200 hover:bg-slate-800/80"
-                                >
-                                  Edit
-                                </button>
+                                <>
+                                 <button
+                                    type="button"
+                                    onClick={() => handleDeleteTopic(id)}
+                                    className="px-2 py-0.5 rounded-lg border border-red-500/20 text-[10px] text-red-400 hover:bg-red-500/10"
+                                  >
+                                    Delete
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => startEditTopic(t)}
+                                    className="px-2 py-0.5 rounded-lg border border-slate-700 text-[10px] text-slate-200 hover:bg-slate-800/80"
+                                  >
+                                    Edit
+                                  </button>
+                                </>
                               )}
                               <button
                                 type="button"
@@ -334,37 +371,45 @@ const Classrooms = () => {
                               onSubmit={(e) => handleAddVideo(e, id)}
                               className="space-y-1 border-t border-slate-800 pt-2 mt-2"
                             >
-                              <input
-                                type="text"
-                                value={videoTitle}
-                                onChange={(e) => setVideoTitle(e.target.value)}
-                                placeholder="Video title (e.g. Lecture 1 – ER Model)"
-                                className="w-full rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
-                              />
-                              <textarea
-                                rows={2}
-                                value={videoDescription}
-                                onChange={(e) => setVideoDescription(e.target.value)}
-                                placeholder="Short description (optional)"
-                                className="w-full rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] resize-none focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
-                              />
                               <div className="flex flex-col gap-1">
-                                <select
-                                  value={videoKind}
-                                  onChange={(e) => {
-                                    setVideoKind(e.target.value);
-                                    setVideoUrl('');
-                                    setVideoFile(null);
-                                  }}
-                                  className="rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
-                                >
-                                  {VIDEO_KINDS.map((k) => (
-                                    <option key={k.value} value={k.value}>
-                                      {k.label}
-                                    </option>
-                                  ))}
-                                </select>
-
+                                <label className="text-[10px] text-slate-400 ml-1">Add to Playlist</label>
+                                <input
+                                  type="text"
+                                  value={videoTitle}
+                                  onChange={(e) => setVideoTitle(e.target.value)}
+                                  placeholder="Video title"
+                                  className="w-full rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
+                                />
+                                <div className="flex gap-2">
+                                  <select
+                                    value={videoKind}
+                                    onChange={(e) => {
+                                      setVideoKind(e.target.value);
+                                      setVideoUrl('');
+                                      setVideoFile(null);
+                                    }}
+                                    className="rounded-lg bg-slate-950/70 border border-slate-800 px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/70"
+                                  >
+                                    {VIDEO_KINDS.map((k) => (
+                                      <option key={k.value} value={k.value}>
+                                        {k.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                   <button
+                                    type="submit"
+                                    disabled={
+                                      addingVideoForTopicId === id ||
+                                      !videoTitle.trim() ||
+                                      (videoKind === 'url' && !videoUrl.trim()) ||
+                                      (videoKind === 'upload' && !videoFile)
+                                    }
+                                    className="inline-flex items-center justify-center rounded-lg bg-primary-600 hover:bg-primary-500 disabled:opacity-60 disabled:cursor-not-allowed text-[11px] font-medium px-3 py-1 text-white ml-auto"
+                                  >
+                                    {addingVideoForTopicId === id ? 'Adding...' : 'Add Video'}
+                                  </button>
+                                </div>
+                                
                                 {videoKind === 'url' && (
                                   <input
                                     type="text"
@@ -376,9 +421,9 @@ const Classrooms = () => {
                                 )}
 
                                 {videoKind === 'upload' && (
-                                  <label className="inline-flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer">
-                                    <span className="px-2 py-1 rounded-lg border border-slate-700 bg-slate-900/70">
-                                      {videoFile ? videoFile.name : 'Choose video file'}
+                                  <label className="inline-flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer border border-dashed border-slate-700 rounded-lg p-2 bg-slate-900/40 hover:bg-slate-900/60 transition-colors">
+                                    <span className={!videoFile ? "text-slate-400" : "text-emerald-400"}>
+                                      {videoFile ? `Selected: ${videoFile.name}` : 'Click to upload video file'}
                                     </span>
                                     <input
                                       type="file"
@@ -389,43 +434,39 @@ const Classrooms = () => {
                                   </label>
                                 )}
                               </div>
-
-                              <button
-                                type="submit"
-                                disabled={
-                                  addingVideoForTopicId === id ||
-                                  !videoTitle.trim() ||
-                                  (videoKind === 'url' && !videoUrl.trim()) ||
-                                  (videoKind === 'upload' && !videoFile)
-                                }
-                                className="mt-1 inline-flex items-center justify-center rounded-lg bg-primary-600 hover:bg-primary-500 disabled:opacity-60 disabled:cursor-not-allowed text-[11px] font-medium px-3 py-1.5 text-white"
-                              >
-                                {addingVideoForTopicId === id ? 'Adding video...' : 'Add video'}
-                              </button>
                             </form>
 
                             {/* Videos list */}
                             <div className="mt-2 space-y-1 max-h-48 overflow-y-auto pr-1">
                               {(t.videos || []).length === 0 && (
                                 <p className="text-[11px] text-slate-500">
-                                  No videos added for this topic yet.
+                                  No videos added (Playlist empty).
                                 </p>
                               )}
-                              {(t.videos || []).map((v) => (
+                              {(t.videos || []).map((v, idx) => (
                                 <div
-                                  key={v._id || v.id || v.title + v.url}
-                                  className="border border-slate-800 rounded-lg bg-slate-950/80 px-2 py-1 text-[11px] flex flex-col gap-1"
+                                  key={v._id || v.id || idx}
+                                  className="border border-slate-800 rounded-lg bg-slate-950/80 px-2 py-1 text-[11px] flex flex-col gap-1 hover:border-slate-700 transition-colors"
                                 >
                                   <div className="flex items-center justify-between gap-2">
                                     <div className="flex-1 min-w-0">
-                                      <p className="font-medium text-slate-50 truncate">{v.title}</p>
-                                      {v.description && (
-                                        <p className="text-[10px] text-slate-400 truncate">{v.description}</p>
-                                      )}
+                                      <p className="font-medium text-slate-50 truncate">{idx + 1}. {v.title}</p>
                                     </div>
-                                    <span className="px-2 py-0.5 rounded-full text-[9px] bg-slate-900 border border-slate-700 text-slate-300">
-                                      {v.kind === 'upload' ? 'Upload' : 'Link'}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="px-2 py-0.5 rounded-full text-[9px] bg-slate-900 border border-slate-700 text-slate-300">
+                                          {v.kind === 'upload' ? 'Upload' : 'Link'}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveVideo(id, v._id || v.id)}
+                                            className="text-red-400 hover:text-red-300 p-0.5"
+                                            title="Remove video"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                                              <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                   </div>
                                   <div className="flex items-center justify-between gap-2">
                                     <span className="text-[9px] text-slate-500 truncate">{v.url}</span>
@@ -435,7 +476,7 @@ const Classrooms = () => {
                                       rel="noreferrer"
                                       className="text-[10px] px-2 py-0.5 rounded-lg border border-primary-500/70 text-primary-200 hover:bg-primary-500/10 whitespace-nowrap"
                                     >
-                                      Open
+                                      Watch
                                     </a>
                                   </div>
                                 </div>

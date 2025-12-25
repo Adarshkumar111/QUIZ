@@ -60,6 +60,15 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 1,
     },
+    // Streak Tracking
+    streak: {
+      type: Number,
+      default: 0,
+    },
+    lastActiveDate: {
+      type: Date,
+      default: null,
+    },
     badges: [
       {
         name: String,

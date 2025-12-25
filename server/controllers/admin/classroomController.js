@@ -303,3 +303,74 @@ export const addClassroomTopicVideo = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// @desc    Delete classroom topic
+// @route   DELETE /api/admin/classrooms/:id/topics/:topicId
+// @access  Private/Admin
+export const deleteClassroomTopic = async (req, res) => {
+  try {
+    const classroom = await Classroom.findById(req.params.id);
+
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    if (!classroom.topics) {
+      return res.status(404).json({ message: 'Topic not found' });
+    }
+
+    const topicIndex = classroom.topics.findIndex(
+      (t) => t._id?.toString() === req.params.topicId || t.id?.toString() === req.params.topicId
+    );
+
+    if (topicIndex === -1) {
+      return res.status(404).json({ message: 'Topic not found' });
+    }
+
+    classroom.topics.splice(topicIndex, 1);
+    await classroom.save();
+
+    res.json({ message: 'Topic deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Remove video from topic
+// @route   DELETE /api/admin/classrooms/:id/topics/:topicId/videos/:videoId
+// @access  Private/Admin
+export const removeClassroomTopicVideo = async (req, res) => {
+  try {
+    const classroom = await Classroom.findById(req.params.id);
+
+    if (!classroom) {
+      return res.status(404).json({ message: 'Classroom not found' });
+    }
+
+    const topic = (classroom.topics || []).find(
+      (t) => t._id?.toString() === req.params.topicId || t.id?.toString() === req.params.topicId
+    );
+
+    if (!topic) {
+      return res.status(404).json({ message: 'Topic not found' });
+    }
+
+    if (!topic.videos) {
+      return res.status(404).json({ message: 'Video not found' });
+    }
+
+    const videoIndex = topic.videos.findIndex(
+      (v) => v._id?.toString() === req.params.videoId || v.id?.toString() === req.params.videoId
+    );
+
+    if (videoIndex === -1) {
+      return res.status(404).json({ message: 'Video not found' });
+    }
+
+    topic.videos.splice(videoIndex, 1);
+    await classroom.save();
+
+    res.json({ message: 'Video removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
