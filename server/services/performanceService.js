@@ -88,13 +88,13 @@ export const performanceService = {
     try {
       const redis = getRedisClient();
       const today = new Date().toISOString().split('T')[0];
-      const key = `leaderboard:daily:${today}`;
+      const dailyKey = `leaderboard:daily:${today}`;
 
       let topUsers = [];
 
       if (redis) {
         // Get top 3 from Redis
-        const rawTop = await redis.zRangeWithScores(key, 0, 2, { REV: true });
+        const rawTop = await redis.zRangeWithScores(dailyKey, 0, 2, { REV: true });
         
         if (rawTop.length > 0) {
           const userIds = rawTop.map(item => item.value);
@@ -113,27 +113,96 @@ export const performanceService = {
         }
       }
 
-      // Fallback or empty list
       return topUsers;
     } catch (err) {
-      console.error('Error fetching top performers:', err.message);
+      console.error('Error fetching daily top performers:', err.message);
       return [];
     }
   },
 
   /**
-   * Broadcast top performers to all connected admins
+   * Get GLOBAL top 3 performers (from Redis with Mongo fallback)
+   */
+  getGlobalTopPerformers: async () => {
+    try {
+      const redis = getRedisClient();
+      const globalKey = 'leaderboard:global';
+      let topUsers = [];
+
+      if (redis) {
+        // 1. Try Redis first
+        const rawTop = await redis.zRangeWithScores(globalKey, 0, 2, { REV: true });
+        
+        if (rawTop.length > 0) {
+          const userIds = rawTop.map(item => item.value);
+          const users = await User.find({ _id: { $in: userIds } }).select('username avatar');
+
+          topUsers = rawTop.map(item => {
+            const user = users.find(u => u._id.toString() === item.value);
+            return {
+              userId: item.value,
+              username: user?.username || 'Unknown',
+              avatar: user?.avatar || '',
+              score: item.score
+            };
+          }).sort((a, b) => b.score - a.score);
+          
+          return topUsers;
+        }
+      }
+
+      // 2. Fallback to MongoDB if Redis is empty
+      const students = await User.find({ role: 'student', isActive: true, deletedAt: null })
+        .sort({ xpPoints: -1 })
+        .limit(3)
+        .select('username avatar xpPoints');
+
+      topUsers = students.map(s => ({
+        userId: s._id,
+        username: s.username,
+        avatar: s.avatar,
+        score: s.xpPoints
+      }));
+
+      // 3. Proactively sync Mongo top performers to Redis for next time
+      if (redis && topUsers.length > 0) {
+        for (const u of topUsers) {
+          await redis.zAdd(globalKey, { score: u.score, value: u.userId.toString() });
+        }
+      }
+
+      return topUsers;
+    } catch (err) {
+      console.error('Error fetching global top performers:', err.message);
+      return [];
+    }
+  },
+
+  /**
+   * Broadcast top performers to all connected admins and students
    */
   broadcastTopPerformers: async (recentActivity = null) => {
     try {
       const io = getIO();
-      const topPerformers = await performanceService.getTopPerformers();
+      const dailyTop = await performanceService.getTopPerformers();
+      const globalTop = await performanceService.getGlobalTopPerformers();
       
+      // Use Global as fallback for Daily if Daily is empty
+      const topPerformers = dailyTop.length > 0 ? dailyTop : globalTop;
+      const isDaily = dailyTop.length > 0;
+
       // Broadcast to admins (includes recent activity details)
-      io.to('admin:dashboard').emit('top_performers_update', { topPerformers, recentActivity });
+      io.to('admin:dashboard').emit('top_performers_update', { 
+        topPerformers, 
+        recentActivity,
+        isDaily
+      });
       
       // Broadcast to students (includes only the leaderboard for motivation)
-      io.to('rankings:live').emit('top_performers_update', { topPerformers });
+      io.to('rankings:live').emit('top_performers_update', { 
+        topPerformers,
+        isDaily
+      });
     } catch (err) {
       // Socket not ready yet or other error
       console.warn('Could not broadcast top performers:', err.message);

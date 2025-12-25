@@ -327,9 +327,14 @@ export const getDashboardOverview = async (req, res) => {
     // Cap at 100% just in case
     if (progressPercentage > 100) progressPercentage = 100;
 
-    // Get Global Rank and Daily Top Performers
+    // Get Global Rank and Top Performers
     const globalRank = await performanceService.getGlobalRank(req.user._id);
-    const topPerformers = await performanceService.getTopPerformers();
+    const dailyTop = await performanceService.getTopPerformers();
+    const globalTop = await performanceService.getGlobalTopPerformers();
+    
+    // Fallback: if daily is empty, use global
+    const topPerformers = dailyTop.length > 0 ? dailyTop : globalTop;
+    const isDaily = dailyTop.length > 0;
 
     res.json({
       user: {
@@ -353,7 +358,8 @@ export const getDashboardOverview = async (req, res) => {
         readNotesCount
       },
       recentQuizzes, 
-      topPerformers
+      topPerformers,
+      isDailyLeaderboard: isDaily
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

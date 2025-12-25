@@ -430,6 +430,11 @@ export const getDashboardStats = async (req, res) => {
       .limit(5)
       .populate('uploadedBy', 'username');
 
+    const dailyTop = await performanceService.getTopPerformers();
+    const globalTop = await performanceService.getGlobalTopPerformers();
+    const topPerformers = dailyTop.length > 0 ? dailyTop : globalTop;
+    const isDaily = dailyTop.length > 0;
+
     res.json({
       stats: {
         totalStudents,
@@ -443,6 +448,8 @@ export const getDashboardStats = async (req, res) => {
       },
       recentQuizzes,
       recentNotes,
+      topPerformers,
+      isDailyLeaderboard: isDaily
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

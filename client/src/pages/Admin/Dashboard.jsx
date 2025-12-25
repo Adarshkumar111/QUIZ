@@ -15,6 +15,7 @@ const Dashboard = () => {
   const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [topPerformers, setTopPerformers] = useState([]);
+  const [isDailyLeaderboard, setIsDailyLeaderboard] = useState(true);
   const [recentActivity, setRecentActivity] = useState(null);
 
   useEffect(() => {
@@ -22,8 +23,9 @@ const Dashboard = () => {
     socketService.joinAdminDashboard();
 
     // Listen for leaderboard updates
-    socketService.onTopPerformersUpdate(({ topPerformers, recentActivity }) => {
+    socketService.onTopPerformersUpdate(({ topPerformers, recentActivity, isDaily }) => {
       setTopPerformers(topPerformers);
+      if (isDaily !== undefined) setIsDailyLeaderboard(isDaily);
       if (recentActivity) {
         setRecentActivity(recentActivity);
         setTimeout(() => setRecentActivity(null), 5000);
@@ -42,7 +44,15 @@ const Dashboard = () => {
     const load = async () => {
       try {
         const response = await adminAPI.getDashboardStats();
-        if (mounted) setDashboardStats(response.data?.stats || null);
+        if (mounted) {
+          setDashboardStats(response.data?.stats || null);
+          if (response.data?.topPerformers) {
+            setTopPerformers(response.data.topPerformers);
+          }
+          if (response.data?.isDailyLeaderboard !== undefined) {
+            setIsDailyLeaderboard(response.data.isDailyLeaderboard);
+          }
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -235,7 +245,12 @@ const Dashboard = () => {
           <div className="card border-primary-500/10 bg-gradient-to-br from-slate-900/60 to-primary-500/5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-sm font-bold text-slate-50 uppercase tracking-wider">Top Performers</h2>
+                <h2 className="text-sm font-bold text-slate-50 uppercase tracking-wider">
+                  {isDailyLeaderboard ? 'Daily Champions' : 'Global Champions'}
+                </h2>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {isDailyLeaderboard ? 'Top performers of the day' : 'Top performers of all time'}
+                </p>
                 {recentActivity && (
                   <motion.p 
                     initial={{ opacity: 0, y: 5 }}
@@ -254,7 +269,7 @@ const Dashboard = () => {
             
             <div className="space-y-3">
               {topPerformers.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-4">No activity recorded today yet.</p>
+                <p className="text-xs text-slate-500 text-center py-4 italic">Competition is just heating up...</p>
               ) : (
                 topPerformers.slice(0, 3).map((performer, idx) => (
                   <motion.div 
@@ -295,8 +310,10 @@ const Dashboard = () => {
                       <div>
                         <p className="text-xs font-bold text-slate-50">{performer.username}</p>
                         <div className="flex items-center gap-1">
-                          <span className="h-1 w-1 rounded-full bg-primary-400" />
-                          <p className="text-[9px] text-slate-400 uppercase tracking-tighter">Daily Score</p>
+                          <span className={`h-1 w-1 rounded-full ${isDailyLeaderboard ? 'bg-primary-400' : 'bg-amber-400'}`} />
+                          <p className="text-[9px] text-slate-400 uppercase tracking-tighter">
+                            {isDailyLeaderboard ? 'Daily Score' : 'Total XP'}
+                          </p>
                         </div>
                       </div>
                     </div>

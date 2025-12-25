@@ -14,14 +14,16 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [savedNotes, setSavedNotes] = useState([]);
   const [topPerformers, setTopPerformers] = useState([]);
+  const [isDailyLeaderboard, setIsDailyLeaderboard] = useState(true);
 
   useEffect(() => {
     // Join rankings room
     socketService.joinRankings();
 
     // Listen for real-time leaderboard updates
-    socketService.onTopPerformersUpdate(({ topPerformers }) => {
+    socketService.onTopPerformersUpdate(({ topPerformers, isDaily }) => {
       setTopPerformers(topPerformers);
+      if (isDaily !== undefined) setIsDailyLeaderboard(isDaily);
     });
 
     return () => {
@@ -51,6 +53,9 @@ const Dashboard = () => {
         setSavedNotes(savedNotesRes.data || []);
         if (dashboardRes.data?.topPerformers) {
           setTopPerformers(dashboardRes.data.topPerformers);
+        }
+        if (dashboardRes.data?.isDailyLeaderboard !== undefined) {
+          setIsDailyLeaderboard(dashboardRes.data.isDailyLeaderboard);
         }
       } catch (error) {
         console.error("Failed to load dashboard data", error);
@@ -254,8 +259,12 @@ const Dashboard = () => {
           <div className="card border-primary-500/10 bg-gradient-to-br from-slate-900/60 to-primary-500/5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-sm font-bold text-slate-50 uppercase tracking-wider">Daily Champions</h2>
-                <p className="text-[10px] text-slate-400 mt-0.5">Top performers of the day</p>
+                <h2 className="text-sm font-bold text-slate-50 uppercase tracking-wider">
+                   {isDailyLeaderboard ? 'Daily Champions' : 'Global Champions'}
+                </h2>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                   {isDailyLeaderboard ? 'Top performers of the day' : 'Top performers of all time'}
+                </p>
               </div>
               <span className="flex items-center gap-1 self-start">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -296,12 +305,16 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <p className="text-xs font-bold text-slate-100">{performer.username}</p>
-                        <p className="text-[8px] text-slate-500 uppercase font-black">Daily MVP</p>
+                        <p className="text-[8px] text-slate-500 uppercase font-black">
+                           {isDailyLeaderboard ? 'Daily MVP' : 'Elite Learner'}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-xs font-black text-primary-400">{Math.round(performer.score)}</p>
-                      <p className="text-[8px] text-slate-500 font-bold uppercase">Points</p>
+                      <p className="text-[8px] text-slate-500 font-bold uppercase">
+                         {isDailyLeaderboard ? 'Points' : 'XP'}
+                      </p>
                     </div>
                   </motion.div>
                 ))
