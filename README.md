@@ -2,6 +2,10 @@
 
 A comprehensive educational platform with advanced admin features and engaging user experience, built with the MERN stack.
 <img width="1908" height="951" alt="image" src="https://github.com/user-attachments/assets/3e4da168-6eb1-49ce-944a-9edc4cf2fe91" />
+<img width="1906" height="985" alt="image" src="https://github.com/user-attachments/assets/c5321174-fc95-4c16-a159-42ae077680f9" />
+<img width="1906" height="985" alt="image" src="https://github.com/user-attachments/assets/78bc9429-320e-47d7-9d11-bdca656e11a8" />
+
+
 
 ## GITHUB COMMAND
 
