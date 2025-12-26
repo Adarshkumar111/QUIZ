@@ -139,7 +139,7 @@ const Announcements = () => {
                     <h2 className="text-2xl font-black text-slate-50 tracking-tight leading-none group-hover:text-primary-400 transition-colors">
                       {a.title}
                     </h2>
-                    <p className="text-sm text-slate-400 leading-relaxed font-medium whitespace-pre-wrap break-words max-w-3xl border-l-2 border-slate-800 pl-6 py-2 italic group-hover:border-primary-500/30 transition-colors">
+                    <p className="text-sm text-slate-400 leading-relaxed font-medium whitespace-pre-wrap break-words max-w-3xl border-l-2 border-slate-800 pl-6 py-2 italic group-hover:border-primary-500/30 transition-colors" style={{ overflowWrap: 'break-word' }}>
                       {a.content}
                     </p>
                   </div>

@@ -257,7 +257,7 @@ const AdminAnnouncements = () => {
                     className="relative group bg-slate-900/40 border border-slate-800 p-5 rounded-3xl backdrop-blur-xl overflow-hidden hover:border-slate-700 transition-all"
                   >
                     <div className="flex items-start justify-between gap-4 relative z-10">
-                      <div className="flex-1 space-y-3">
+                      <div className="flex-1 space-y-3 min-w-0">
                          <div className="flex items-center gap-3">
                             <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${theme.badge} shadow-lg ${theme.glow}`}>
                                {theme.icon} {a.priority}
@@ -274,7 +274,7 @@ const AdminAnnouncements = () => {
                          
                          <div>
                             <h3 className="text-sm font-black text-slate-50 tracking-tight">{a.title}</h3>
-                            <p className="text-xs text-slate-400 leading-relaxed mt-2 whitespace-pre-wrap">{a.content}</p>
+                            <p className="text-xs text-slate-400 leading-relaxed mt-2 whitespace-pre-wrap break-all" style={{ overflowWrap: 'anywhere' }}>{a.content}</p>
                          </div>
 
                          {a.createdBy?.username && (
