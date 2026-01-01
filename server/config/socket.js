@@ -6,7 +6,7 @@ import { createAdapter } from '@socket.io/redis-adapter';
 let io;
 
 export const initSocket = (server) => {
-  const allowedOrigins = (process.env.CLIENT_URL || '')
+  const allowedOrigins = (process.env.CLIENT_URL || 'https://quiz-seven-lemon.vercel.app,http://localhost:5173')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);

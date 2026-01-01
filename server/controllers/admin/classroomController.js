@@ -82,7 +82,7 @@ export const generateInvite = async (req, res) => {
 
     res.json({
       inviteCode: classroom.inviteCode,
-      inviteLink: `${(process.env.CLIENT_URL || '').split(',')[0].trim()}/join/${classroom.inviteCode}`,
+      inviteLink: `${(process.env.CLIENT_URL || 'https://quiz-seven-lemon.vercel.app').split(',')[0].trim()}/join/${classroom.inviteCode}`,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

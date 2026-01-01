@@ -64,7 +64,9 @@ initRedis().catch((err) => {
 app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedOrigins = (process.env.CLIENT_URL || '').split(',').map(url => url.trim());
+    const allowedOrigins = (process.env.CLIENT_URL || 'https://quiz-seven-lemon.vercel.app,http://localhost:5173')
+      .split(',')
+      .map(url => url.trim());
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1) {
