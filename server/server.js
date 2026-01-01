@@ -117,6 +117,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to Quiz App API',
+    status: 'Running',
+    documentation: '/api/docs' // Optional usage
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
