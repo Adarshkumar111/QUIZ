@@ -147,6 +147,18 @@ export const adminAPI = {
   updateTicketStatus: (id, status) => api.put(`/admin/tickets/${id}/status`, { status }),
   replyToTicket: (id, message) => api.post(`/admin/tickets/${id}/reply`, { message }),
   getAllStudents: (params) => api.get('/admin/analytics/all-students', { params }),
+
+  // Live Classes
+  getAllLiveClasses: () => api.get('/admin/live-classes'),
+  createLiveClass: (data) => api.post('/admin/live-classes', data),
+  startLiveClass: (id) => api.patch(`/admin/live-classes/${id}/start`),
+  endLiveClass: (id) => api.patch(`/admin/live-classes/${id}/end`),
+  getClassAttendance: (id) => api.get(`/admin/live-classes/${id}/attendance`),
+  uploadClassRecording: (id, formData) => api.post(`/admin/live-classes/${id}/upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  deleteLiveClass: (id) => api.delete(`/admin/live-classes/${id}`),
+  toggleLiveClassVisibility: (id) => api.patch(`/admin/live-classes/${id}/visibility`),
 };
 
 // User APIs
@@ -212,6 +224,11 @@ export const userAPI = {
   createWhiteboardSession: (classroomId, title) => api.post(`/whiteboard/${classroomId}/create`, { title }),
   getWhiteboardSession: (sessionId) => api.get(`/whiteboard/${sessionId}`),
   updateWhiteboardSession: (sessionId, snapshot) => api.put(`/whiteboard/${sessionId}`, { snapshot }),
+
+  // Live Classes
+  getAvailableLiveClasses: () => api.get('/live-classes'),
+  joinLiveClass: (id) => api.post(`/live-classes/${id}/join`),
+  leaveLiveClass: (id) => api.post(`/live-classes/${id}/leave`),
 };
 
 export default api;

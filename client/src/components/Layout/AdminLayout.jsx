@@ -7,6 +7,7 @@ const adminLinks = [
   { to: '/admin/notes', label: 'Notes' },
   { to: '/admin/quizzes', label: 'Quizzes' },
   { to: '/admin/classrooms', label: 'Classrooms' },
+  { to: '/admin/live-classes', label: 'Live Classes' },
   { to: '/admin/students', label: 'Students' },
   { to: '/admin/analytics', label: 'Analytics' },
   { to: '/admin/discussions', label: 'Discussions' },

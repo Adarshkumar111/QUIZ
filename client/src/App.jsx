@@ -20,6 +20,7 @@ import Whiteboard from './pages/User/Whiteboard';
 import UserAnnouncements from './pages/User/Announcements';
 import UserClassrooms from './pages/User/Classrooms';
 import ClassroomVideos from './pages/User/ClassroomVideos';
+import LiveClassList from './pages/User/LiveClassList';
 
 // Admin Pages
 import AdminDashboard from './pages/Admin/Dashboard';
@@ -34,6 +35,7 @@ import AdminAnnouncements from './pages/Admin/Announcements';
 import Classrooms from './pages/Admin/Classrooms';
 import Students from './pages/Admin/Students';
 import StudentDetail from './pages/Admin/StudentDetail';
+import LiveClassManagement from './pages/Admin/LiveClassManagement';
 
 // Layouts & Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -136,6 +138,7 @@ function App() {
           <Route path="classrooms" element={<UserClassrooms />} />
           <Route path="classrooms/:id/videos" element={<ClassroomVideos />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="live-classes" element={<LiveClassList />} />
           <Route path="whiteboard/:sessionId" element={<Whiteboard />} />
         </Route>
 
@@ -153,6 +156,7 @@ function App() {
           <Route path="quizzes" element={<QuizBuilder />} />
           <Route path="quizzes/:id/edit" element={<QuizEdit />} />
           <Route path="classrooms" element={<Classrooms />} />
+          <Route path="live-classes" element={<LiveClassManagement />} />
           <Route path="students" element={<Students />} />
           <Route path="students/:userId" element={<StudentDetail />} />
 

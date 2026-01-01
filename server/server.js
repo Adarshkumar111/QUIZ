@@ -19,6 +19,7 @@ import adminAnnouncementRoutes from './routes/admin/announcements.js';
 import adminTicketRoutes from './routes/admin/tickets.js';
 import adminGroupRoutes from './routes/admin/groups.js';
 import adminProfileRoutes from './routes/admin/profile.js';
+import adminLiveClassRoutes from './routes/admin/liveClass.js';
 import userNotesRoutes from './routes/user/notes.js';
 import userQuizRoutes from './routes/user/quiz.js';
 import userDiscussionRoutes from './routes/user/discussions.js';
@@ -27,6 +28,7 @@ import userDashboardRoutes from './routes/user/dashboard.js';
 import userAssignmentRoutes from './routes/user/assignments.js';
 import userProfileRoutes from './routes/user/profile.js';
 import userClassroomsRoutes from './routes/user/classrooms.js';
+import userLiveClassRoutes from './routes/user/liveClass.js';
 import whiteboardRoutes from './routes/whiteboard.js';
 
 // Load environment variables
@@ -43,10 +45,12 @@ initSocket(httpServer);
 import { initDiscussionSocket } from './sockets/discussionSocket.js';
 import { initWhiteboardSocket } from './sockets/whiteboardSocket.js';
 import { initAdminSocket } from './sockets/adminSocket.js';
+import { initLiveClassSocket } from './sockets/liveClassSocket.js';
 
 initDiscussionSocket();
 initWhiteboardSocket();
 initAdminSocket();
+initLiveClassSocket();
 
 //Connect to database
 connectDB();
@@ -59,7 +63,16 @@ initRedis().catch((err) => {
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL,
+  origin: (origin, callback) => {
+    const allowedOrigins = (process.env.CLIENT_URL || '').split(',').map(url => url.trim());
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 app.use(morgan('dev'));
@@ -85,6 +98,7 @@ app.use('/api/admin/announcements', adminAnnouncementRoutes);
 app.use('/api/admin/tickets', adminTicketRoutes);
 app.use('/api/admin/groups', adminGroupRoutes);
 app.use('/api/admin/profile', adminProfileRoutes);
+app.use('/api/admin/live-classes', adminLiveClassRoutes);
 
 // User routes
 app.use('/api/notes', userNotesRoutes);
@@ -95,6 +109,7 @@ app.use('/api/dashboard', userDashboardRoutes);
 app.use('/api/assignments', userAssignmentRoutes);
 app.use('/api/profile', userProfileRoutes);
 app.use('/api/classrooms', userClassroomsRoutes);
+app.use('/api/live-classes', userLiveClassRoutes);
 app.use('/api/whiteboard', whiteboardRoutes);
 
 // Health check route

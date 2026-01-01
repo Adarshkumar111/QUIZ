@@ -11,6 +11,7 @@ const userLinks = [
   { to: '/quizzes', label: 'Quizzes' },
   { to: '/discussions', label: 'Discussions' },
   { to: '/classrooms', label: 'Classrooms' },
+  { to: '/live-classes', label: 'Live Classes' },
   { to: '/announcements', label: 'Announcements' },
   { to: '/profile', label: 'Profile' },
 ];
